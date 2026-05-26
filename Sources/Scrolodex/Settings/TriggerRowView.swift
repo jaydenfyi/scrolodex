@@ -172,8 +172,6 @@ struct TriggerRowView: View {
 			settingsSubgroup {
 				settingToggleRow("Show overlay on hotkey press", isOn: $store.showOnPress)
 				Divider()
-				settingToggleRow("Show preview on hover", isOn: $store.showPreviewOnHover)
-				Divider()
 				settingToggleRow("Invert scroll direction", isOn: $store.invertDirection)
 			}
 

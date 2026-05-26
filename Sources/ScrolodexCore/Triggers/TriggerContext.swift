@@ -63,6 +63,7 @@ public struct TriggerContext: Equatable, Sendable {
 
 	public static func from(
 		dockConfig: DockHoverConfiguration,
+		peekEnabled: Bool,
 		peekOpacity: Double,
 		theme: OverlayTheme,
 		bundleID: String,
@@ -72,7 +73,7 @@ public struct TriggerContext: Equatable, Sendable {
 			scope: .dockHover,
 			filter: .sameApp,
 			overlayMode: dockConfig.overlayMode,
-			peekEnabled: dockConfig.showPreviewOnHover,
+			peekEnabled: peekEnabled,
 			peekOpacity: peekOpacity,
 			theme: theme,
 			monitorScope: dockConfig.monitorScope,

@@ -6,7 +6,6 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 	public let modifierFlags: UInt64
 	public let monitorScope: MonitorScope
 	public let overlayMode: OverlayPresentationMode
-	public let showPreviewOnHover: Bool
 	public let showOnPress: Bool
 	public let invertDirection: Bool
 	public let animate: Bool
@@ -18,7 +17,6 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 		modifierFlags: UInt64 = CGEventFlags.maskAlternate.rawValue,
 		monitorScope: MonitorScope = SettingDefaults.monitorScope,
 		overlayMode: OverlayPresentationMode = SettingDefaults.overlayMode,
-		showPreviewOnHover: Bool = SettingDefaults.showPreviewOnHover,
 		showOnPress: Bool = SettingDefaults.showOnPress,
 		invertDirection: Bool = SettingDefaults.invertDirection,
 		animate: Bool = SettingDefaults.animate,
@@ -29,7 +27,6 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 		self.modifierFlags = modifierFlags
 		self.monitorScope = monitorScope
 		self.overlayMode = overlayMode
-		self.showPreviewOnHover = showPreviewOnHover
 		self.showOnPress = showOnPress
 		self.invertDirection = invertDirection
 		self.animate = animate
@@ -63,7 +60,6 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 			modifierFlags: modifierFlags,
 			monitorScope: MonitorScope(rawValue: monitorScopeRaw) ?? defaultMonitorScope,
 			overlayMode: OverlayPresentationMode(rawValue: overlayRaw) ?? .default,
-			showPreviewOnHover: defaults.object(forKey: "\(prefix).showPreviewOnHover") as? Bool ?? SettingDefaults.showPreviewOnHover,
 			showOnPress: defaults.object(forKey: "\(prefix).showOnPress") as? Bool ?? SettingDefaults.showOnPress,
 			invertDirection: defaults.object(forKey: "\(prefix).invertDirection") as? Bool ?? SettingDefaults.invertDirection,
 			animate: globalAnimate,
@@ -100,7 +96,6 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 		let mapping: [(old: String, new: String)] = [
 			("enabled", "enabled"),
 			("modifierFlags", "flags"),
-			("showPreviewOnHover", "showPreviewOnHover"),
 			("showOnPress", "showOnPress"),
 		]
 		for pair in mapping {

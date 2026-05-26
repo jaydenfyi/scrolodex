@@ -56,10 +56,6 @@ final class TriggerSettingsStore {
 		didSet { defaults.set(gesture, forKey: "\(prefix).gesture") }
 	}
 
-	var showPreviewOnHover: Bool {
-		didSet { defaults.set(showPreviewOnHover, forKey: "\(prefix).showPreviewOnHover") }
-	}
-
 	init(prefix: String, defaultFlags: Double = 0, migrationPrefix: String? = nil) {
 		self.prefix = prefix
 		let d = defaults
@@ -80,7 +76,6 @@ final class TriggerSettingsStore {
 		self.kbNavBackwardFlags = d.double(forKey: "\(prefix).keyboardNav.backwardFlags")
 		self.kbNavBackwardKeyCode = d.double(forKey: "\(prefix).keyboardNav.backwardKeyCode")
 		self.gesture = d.integer(forKey: "\(prefix).gesture")
-		self.showPreviewOnHover = d.object(forKey: "\(prefix).showPreviewOnHover") as? Bool ?? SettingDefaults.showPreviewOnHover
 	}
 
 	convenience init(prefix: String, defaultHotkey: HotkeyConfiguration, migrationPrefix: String? = nil) {
@@ -95,7 +90,6 @@ final class TriggerSettingsStore {
 		let mapping: [(old: String, new: String)] = [
 			("enabled", "enabled"),
 			("modifierFlags", "flags"),
-			("showPreviewOnHover", "showPreviewOnHover"),
 			("showOnPress", "showOnPress"),
 		]
 		for pair in mapping {

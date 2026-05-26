@@ -328,6 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		let dockHandler = DockActionHandler(
 			coordinator: coordinator,
 			scrollThreshold: threshold,
+			peekEnabled: globalVisual.peekEnabled,
 			peekOpacity: globalVisual.peekOpacity,
 			theme: globalVisual.theme
 		)

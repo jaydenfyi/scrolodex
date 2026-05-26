@@ -22,9 +22,6 @@ public enum SettingDefaults {
 	public static let invertDirection: Bool = false
 	public static let keyboardNavigationEnabled: Bool = false
 
-	// MARK: - Dock
-	public static let showPreviewOnHover: Bool = true
-
 	// MARK: - Default modes (use `.rawValue` when a UserDefaults string is needed)
 	public static let overlayMode: OverlayPresentationMode = .default
 	public static let monitorScope: MonitorScope = .currentMonitor

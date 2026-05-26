@@ -10,7 +10,6 @@ struct DockHoverConfigurationTests {
         let config = DockHoverConfiguration()
         #expect(!config.enabled)
         #expect(config.modifierFlags == CGEventFlags.maskAlternate.rawValue)
-        #expect(config.showPreviewOnHover)
         #expect(config.monitorScope == .currentMonitor)
     }
 
@@ -27,16 +26,14 @@ struct DockHoverConfigurationTests {
         let prefix = "test.dockHover"
         defaults.set(true, forKey: "\(prefix).enabled")
         defaults.set(Double(CGEventFlags.maskControl.rawValue), forKey: "\(prefix).flags")
-        defaults.set(false, forKey: "\(prefix).showPreviewOnHover")
         defaults.set(MonitorScope.allMonitors.rawValue, forKey: "\(prefix).monitorScope")
 
         let config = DockHoverConfiguration.fromUserDefaults(prefix: prefix)
         #expect(config.enabled)
         #expect(config.modifierFlags == CGEventFlags.maskControl.rawValue)
-        #expect(!config.showPreviewOnHover)
         #expect(config.monitorScope == .allMonitors)
 
-        for key in ["enabled", "flags", "showPreviewOnHover", "monitorScope"] {
+        for key in ["enabled", "flags", "monitorScope"] {
             defaults.removeObject(forKey: "\(prefix).\(key)")
         }
     }
@@ -47,7 +44,6 @@ struct DockHoverConfigurationTests {
         let config = DockHoverConfiguration.fromUserDefaults(prefix: prefix)
         #expect(!config.enabled)
         #expect(config.modifierFlags == CGEventFlags.maskAlternate.rawValue)
-        #expect(config.showPreviewOnHover)
         #expect(config.monitorScope == .currentMonitor)
     }
 
@@ -66,20 +62,18 @@ struct DockHoverConfigurationTests {
 
         defaults.set(true, forKey: "\(old).enabled")
         defaults.set(Double(CGEventFlags.maskControl.rawValue), forKey: "\(old).modifierFlags")
-        defaults.set(false, forKey: "\(old).showPreviewOnHover")
         defaults.set(false, forKey: "\(old).showOnPress")
 
         let config = DockHoverConfiguration.fromUserDefaults(
             prefix: new, defaultMonitorScope: .allMonitors, migrationPrefix: old)
         #expect(config.enabled)
         #expect(config.modifierFlags == CGEventFlags.maskControl.rawValue)
-        #expect(!config.showPreviewOnHover)
         #expect(!config.showOnPress)
 
-        for key in ["enabled", "modifierFlags", "showPreviewOnHover", "showOnPress"] {
+        for key in ["enabled", "modifierFlags", "showOnPress"] {
             defaults.removeObject(forKey: "\(old).\(key)")
         }
-        for key in ["enabled", "flags", "showPreviewOnHover", "showOnPress"] {
+        for key in ["enabled", "flags", "showOnPress"] {
             defaults.removeObject(forKey: "\(new).\(key)")
         }
     }

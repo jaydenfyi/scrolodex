@@ -267,7 +267,7 @@ struct SettingsView: View {
 
 				groupedDivider()
 
-				SettingsRow(icon: "eye", iconColor: .blue, title: "Show Peek") {
+				SettingsRow(icon: "eye", iconColor: .blue, title: "Show Window Preview") {
 					Toggle("", isOn: $peekEnabled)
 						.toggleStyle(.switch)
 						.labelsHidden()
@@ -276,7 +276,7 @@ struct SettingsView: View {
 				if peekEnabled {
 					groupedDivider()
 
-					SettingsRow(icon: "circle.lefthalf.filled", iconColor: .blue, title: "Peek Opacity") {
+					SettingsRow(icon: "circle.lefthalf.filled", iconColor: .blue, title: "Window Preview Opacity") {
 						Slider(value: $peekOpacity, in: 0.5...1)
 							.frame(width: 120)
 						Text("\(Int((peekOpacity * 100).rounded()))%")

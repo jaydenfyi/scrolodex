@@ -61,9 +61,9 @@ struct TriggerContextTests {
         let config = DockHoverConfiguration(
             enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue,
             monitorScope: .allMonitors, overlayMode: .list,
-            showPreviewOnHover: true, invertDirection: true, animate: false, wrapAround: false)
+            invertDirection: true, animate: false, wrapAround: false)
         let context = TriggerContext.from(
-            dockConfig: config, peekOpacity: 0.8, theme: OverlayTheme.light,
+            dockConfig: config, peekEnabled: true, peekOpacity: 0.8, theme: OverlayTheme.light,
             bundleID: "com.example.app", scrollThreshold: 6)
 
         #expect(context.scope == .dockHover)
@@ -83,9 +83,9 @@ struct TriggerContextTests {
     func dockConfigDisablesPeek() {
         let config = DockHoverConfiguration(
             enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue,
-            monitorScope: .currentMonitor, showPreviewOnHover: false)
+            monitorScope: .currentMonitor)
         let context = TriggerContext.from(
-            dockConfig: config, peekOpacity: 0.94, theme: OverlayTheme.default,
+            dockConfig: config, peekEnabled: false, peekOpacity: 0.94, theme: OverlayTheme.default,
             bundleID: "com.example.app", scrollThreshold: 6)
 
         #expect(context.peekEnabled == false)
@@ -95,9 +95,9 @@ struct TriggerContextTests {
     func dockConfigUsesOwnMonitorScope() {
         let config = DockHoverConfiguration(
             enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue,
-            monitorScope: .allMonitors, showPreviewOnHover: true)
+            monitorScope: .allMonitors)
         let context = TriggerContext.from(
-            dockConfig: config, peekOpacity: 0.94, theme: OverlayTheme.default,
+            dockConfig: config, peekEnabled: true, peekOpacity: 0.94, theme: OverlayTheme.default,
             bundleID: "com.example.app", scrollThreshold: 6)
 
         #expect(context.monitorScope == MonitorScope.allMonitors)
