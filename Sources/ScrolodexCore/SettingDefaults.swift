@@ -20,7 +20,7 @@ public enum SettingDefaults {
 	public static let scrollSensitivity: Double = 6
 	public static let showOnPress: Bool = false
 	public static let invertDirection: Bool = false
-	public static let keyboardNavigationEnabled: Bool = false
+	public static let keyboardNavigationEnabled: Bool = true
 
 	// MARK: - Default modes (use `.rawValue` when a UserDefaults string is needed)
 	public static let overlayMode: OverlayPresentationMode = .default
