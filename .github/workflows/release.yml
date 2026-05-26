@@ -138,8 +138,8 @@ jobs:
           curl --fail --silent --show-error --location \
             --retry 5 --retry-all-errors --retry-delay 2 \
             -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/octet-stream" \
-            "https://github.com/jaydenfyi/scrolodex/archive/refs/tags/v${VERSION}.tar.gz" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/jaydenfyi/scrolodex/tarball/v${VERSION}" \
             -o source.tar.gz
           FORMULA_SHA="$(/usr/bin/shasum -a 256 source.tar.gz | cut -d' ' -f1)"
 
