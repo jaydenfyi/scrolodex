@@ -29,9 +29,9 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
       - name: Install Knope
-        uses: knope-dev/action@0984d546df764ef3b3e58f21bcb070371af30c59 # v2.0.0
+        uses: knope-dev/action@v2.1.2
         with:
-          version: 0.11.0
+          version: 0.23.0
       - name: Prepare release
         run: knope prepare-release --verbose
         env:
@@ -100,9 +100,9 @@ jobs:
           name: Scrolodex-${{ needs.prepare-release.outputs.version }}.zip
           path: .build/arm64-apple-macosx/release/
       - name: Install Knope
-        uses: knope-dev/action@0984d546df764ef3b3e58f21bcb070371af30c59 # v2.0.0
+        uses: knope-dev/action@v2.1.2
         with:
-          version: 0.11.0
+          version: 0.23.0
       - name: Create GitHub Release
         run: knope release --verbose
         env:
