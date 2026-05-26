@@ -115,14 +115,18 @@ jobs:
         with:
           repository: jaydenfyi/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_PAT }}
-          persist-credentials: false
+          persist-credentials: true
       - name: Compute SHA256s
         id: sha
         run: |
           VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
-          curl -sfL "https://github.com/jaydenfyi/scrollodex/archive/refs/tags/v${VERSION}.tar.gz" -o source.tar.gz
+          curl -sfL -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/jaydenfyi/scrolodex/tarball/v${VERSION}" \
+            -o source.tar.gz
           FORMULA_SHA="$(/usr/bin/shasum -a 256 source.tar.gz | cut -d' ' -f1)"
-          curl -sfL "https://github.com/jaydenfyi/scrollodex/releases/download/v${VERSION}/Scrolodex-${VERSION}.zip" -o release.zip
+          curl -sfL -H "Authorization: token ${GH_TOKEN}" \
+            "https://github.com/jaydenfyi/scrolodex/releases/download/v${VERSION}/Scrolodex-${VERSION}.zip" \
+            -o release.zip
           CASK_SHA="$(/usr/bin/shasum -a 256 release.zip | cut -d' ' -f1)"
           test -n "${FORMULA_SHA}" || { echo "error: empty formula SHA256" >&2; exit 1; }
           test -n "${CASK_SHA}" || { echo "error: empty cask SHA256" >&2; exit 1; }
@@ -130,12 +134,13 @@ jobs:
           echo "cask=${CASK_SHA}" >> "$GITHUB_OUTPUT"
         env:
           NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_PAT }}
       - name: Update formula
         run: |
           VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
           FORMULA_SHA="${STEPS_SHA_OUTPUTS_FORMULA}"
-          sed -i '' "s|url \".*\"|url \"https://github.com/jaydenfyi/scrollodex/archive/refs/tags/v${VERSION}.tar.gz\"|" Formula/scrollodex.rb
-          sed -i '' "s|sha256 \".*\"|sha256 \"${FORMULA_SHA}\"|" Formula/scrollodex.rb
+          sed -i '' 's|url ".*"|url "https://github.com/jaydenfyi/scrolodex/archive/refs/tags/v'"${VERSION}"'.tar.gz"|' Formula/scrolodex.rb
+          sed -i '' 's|sha256 ".*"|sha256 "'"${FORMULA_SHA}"'"|' Formula/scrolodex.rb
         env:
           NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
           STEPS_SHA_OUTPUTS_FORMULA: ${{ steps.sha.outputs.formula }}
@@ -143,8 +148,8 @@ jobs:
         run: |
           VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
           CASK_SHA="${STEPS_SHA_OUTPUTS_CASK}"
-          sed -i '' "s|version \".*\"|version \"${VERSION}\"|" Casks/scrollodex.rb
-          sed -i '' "s|sha256 \".*\"|sha256 \"${CASK_SHA}\"|" Casks/scrollodex.rb
+          sed -i '' 's|version ".*"|version "'"${VERSION}"'"|' Casks/scrolodex.rb
+          sed -i '' 's|sha256 ".*"|sha256 "'"${CASK_SHA}"'"|' Casks/scrolodex.rb
         env:
           NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
           STEPS_SHA_OUTPUTS_CASK: ${{ steps.sha.outputs.cask }}
@@ -153,8 +158,8 @@ jobs:
           VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
-          git add Formula/scrollodex.rb Casks/scrollodex.rb
-          git commit -m "scrollodex ${VERSION}"
+          git add Formula/scrolodex.rb Casks/scrolodex.rb
+          git commit -m "scrolodex ${VERSION}"
           git push
         env:
           NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
