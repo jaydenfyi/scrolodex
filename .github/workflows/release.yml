@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: macos-15
+    permissions:
+      contents: write # push prepare-release commit
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+      - name: Install Knope
+        uses: knope-dev/action@0984d546df764ef3b3e58f21bcb070371af30c59 # v2.0.0
+        with:
+          version: 0.11.0
+      - name: Prepare release
+        run: knope prepare-release --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push release commit
+        run: git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Store commit SHA
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Store version
+        id: version
+        run: echo "version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: prepare-release
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.sha }}
+          persist-credentials: false
+      - name: Build release
+        run: swift build -c release
+      - name: Assemble app bundle
+        run: |
+          RELEASE_DIR=.build/arm64-apple-macosx/release
+          APP_DIR="$RELEASE_DIR/Scrollodex.app"
+          mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
+          cp "$RELEASE_DIR/Scrollodex" "$APP_DIR/Contents/MacOS/Scrollodex"
+          cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
+          cp Sources/Scrollodex/Resources/MenuBarIcon.svg "$APP_DIR/Contents/Resources/"
+      - name: Ad-hoc sign
+        run: codesign --force --sign - .build/arm64-apple-macosx/release/Scrollodex.app
+      - name: Create zip
+        run: |
+          VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
+          ditto -c -k --keepParent \
+            .build/arm64-apple-macosx/release/Scrollodex.app \
+            .build/arm64-apple-macosx/release/Scrollodex-$VERSION.zip
+        env:
+          NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Scrollodex-${{ needs.prepare-release.outputs.version }}.zip
+          path: .build/arm64-apple-macosx/release/Scrollodex-${{ needs.prepare-release.outputs.version }}.zip
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: [prepare-release, build]
+    runs-on: macos-15
+    permissions:
+      contents: write # create GitHub Release + tag
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Scrollodex-${{ needs.prepare-release.outputs.version }}.zip
+          path: .build/arm64-apple-macosx/release/
+      - name: Install Knope
+        uses: knope-dev/action@0984d546df764ef3b3e58f21bcb070371af30c59 # v2.0.0
+        with:
+          version: 0.11.0
+      - name: Create GitHub Release
+        run: knope release --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-tap:
+    name: Update Homebrew Tap
+    needs: [prepare-release, release]
+    runs-on: macos-15
+    permissions: {}
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: jaydenfyi/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_PAT }}
+          persist-credentials: false
+      - name: Compute SHA256s
+        id: sha
+        run: |
+          VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
+          curl -sfL "https://github.com/jaydenfyi/scrollodex/archive/refs/tags/v${VERSION}.tar.gz" -o source.tar.gz
+          FORMULA_SHA="$(/usr/bin/shasum -a 256 source.tar.gz | cut -d' ' -f1)"
+          curl -sfL "https://github.com/jaydenfyi/scrollodex/releases/download/v${VERSION}/Scrollodex-${VERSION}.zip" -o release.zip
+          CASK_SHA="$(/usr/bin/shasum -a 256 release.zip | cut -d' ' -f1)"
+          test -n "${FORMULA_SHA}" || { echo "error: empty formula SHA256" >&2; exit 1; }
+          test -n "${CASK_SHA}" || { echo "error: empty cask SHA256" >&2; exit 1; }
+          echo "formula=${FORMULA_SHA}" >> "$GITHUB_OUTPUT"
+          echo "cask=${CASK_SHA}" >> "$GITHUB_OUTPUT"
+        env:
+          NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
+      - name: Update formula
+        run: |
+          VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
+          FORMULA_SHA="${STEPS_SHA_OUTPUTS_FORMULA}"
+          sed -i '' "s|url \".*\"|url \"https://github.com/jaydenfyi/scrollodex/archive/refs/tags/v${VERSION}.tar.gz\"|" Formula/scrollodex.rb
+          sed -i '' "s|sha256 \".*\"|sha256 \"${FORMULA_SHA}\"|" Formula/scrollodex.rb
+        env:
+          NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
+          STEPS_SHA_OUTPUTS_FORMULA: ${{ steps.sha.outputs.formula }}
+      - name: Update cask
+        run: |
+          VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
+          CASK_SHA="${STEPS_SHA_OUTPUTS_CASK}"
+          sed -i '' "s|version \".*\"|version \"${VERSION}\"|" Casks/scrollodex.rb
+          sed -i '' "s|sha256 \".*\"|sha256 \"${CASK_SHA}\"|" Casks/scrollodex.rb
+        env:
+          NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
+          STEPS_SHA_OUTPUTS_CASK: ${{ steps.sha.outputs.cask }}
+      - name: Commit and push
+        run: |
+          VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+          git add Formula/scrollodex.rb Casks/scrollodex.rb
+          git commit -m "scrollodex ${VERSION}"
+          git push
+        env:
+          NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
