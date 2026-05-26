@@ -97,18 +97,33 @@ jobs:
         with:
           name: Scrolodex-${{ needs.prepare-release.outputs.version }}.zip
           path: .build/arm64-apple-macosx/release/
-      - name: Install Knope
-        run: brew install knope-dev/tap/knope
       - name: Create GitHub Release
-        run: knope release --verbose
+        run: |
+          VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
+          RELEASE_NOTES="$(mktemp)"
+          awk -v version="${VERSION}" '
+            $0 == "## " version || index($0, "## " version " ") == 1 || index($0, "## " version " (") == 1 { in_section=1; print; next }
+            in_section && /^## / { exit }
+            in_section { print }
+          ' CHANGELOG.md > "${RELEASE_NOTES}"
+          test -s "${RELEASE_NOTES}" || echo "Scrolodex ${VERSION}" > "${RELEASE_NOTES}"
+          gh release create "v${VERSION}" \
+            ".build/arm64-apple-macosx/release/Scrolodex-${VERSION}.zip" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${NEEDS_PREPARE_RELEASE_OUTPUTS_SHA}" \
+            --title "v${VERSION}" \
+            --notes-file "${RELEASE_NOTES}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEEDS_PREPARE_RELEASE_OUTPUTS_SHA: ${{ needs.prepare-release.outputs.sha }}
+          NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
 
   update-tap:
     name: Update Homebrew Tap
     needs: [prepare-release, release]
     runs-on: macos-15
-    permissions: {}
+    permissions:
+      contents: read # read Scrolodex source archive + release asset with GITHUB_TOKEN
     steps:
       - name: Checkout tap repo
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -120,12 +135,24 @@ jobs:
         id: sha
         run: |
           VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"
-          curl -sfL -H "Authorization: token ${GH_TOKEN}" \
-            "https://api.github.com/repos/jaydenfyi/scrolodex/tarball/v${VERSION}" \
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-all-errors --retry-delay 2 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            "https://github.com/jaydenfyi/scrolodex/archive/refs/tags/v${VERSION}.tar.gz" \
             -o source.tar.gz
           FORMULA_SHA="$(/usr/bin/shasum -a 256 source.tar.gz | cut -d' ' -f1)"
-          curl -sfL -H "Authorization: token ${GH_TOKEN}" \
-            "https://github.com/jaydenfyi/scrolodex/releases/download/v${VERSION}/Scrolodex-${VERSION}.zip" \
+
+          ASSET_ID="$(curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/jaydenfyi/scrolodex/releases/tags/v${VERSION}" \
+            | python3 -c 'import json, sys; release=json.load(sys.stdin); print(next(asset["id"] for asset in release["assets"] if asset["name"] == "Scrolodex-'"${VERSION}"'.zip"))')"
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-all-errors --retry-delay 2 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/jaydenfyi/scrolodex/releases/assets/${ASSET_ID}" \
             -o release.zip
           CASK_SHA="$(/usr/bin/shasum -a 256 release.zip | cut -d' ' -f1)"
           test -n "${FORMULA_SHA}" || { echo "error: empty formula SHA256" >&2; exit 1; }
@@ -134,7 +161,7 @@ jobs:
           echo "cask=${CASK_SHA}" >> "$GITHUB_OUTPUT"
         env:
           NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION: ${{ needs.prepare-release.outputs.version }}
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update formula
         run: |
           VERSION="${NEEDS_PREPARE_RELEASE_OUTPUTS_VERSION}"

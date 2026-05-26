@@ -2,9 +2,6 @@
 versioned_files = []
 changelog = "CHANGELOG.md"
 
-[[package.assets]]
-path = ".build/arm64-apple-macosx/release/Scrolodex-$version.zip"
-name = "Scrolodex-$version.zip"
 
 [github]
 owner = "jaydenfyi"
@@ -34,11 +31,6 @@ command = "git commit -m \"chore: prepare release $version\""
 [workflows.steps.variables]
 "$version" = "Version"
 
-[[workflows]]
-name = "release"
-
-[[workflows.steps]]
-type = "Release"
 
 [[workflows]]
 name = "document-change"
