@@ -67,9 +67,9 @@ struct SettingsView: View {
 				if !(accessibilityGranted && screenRecordingGranted) {
 					permissionsBanner
 				}
-				triggersGroup
-				appearanceGroup
 				generalGroup
+				appearanceGroup
+				triggersGroup
 
 				HStack {
 					Spacer()
@@ -322,18 +322,6 @@ struct SettingsView: View {
 			SettingsSectionHeader("General")
 
 			groupedContainer {
-				SettingsRow(icon: "slider.horizontal.3", iconColor: .secondary, title: "Scroll Sensitivity") {
-					Slider(value: $scrollSensitivity, in: sensitivityRange, step: 1)
-						.frame(width: 120)
-					Text("\(Int(scrollSensitivity))")
-						.monospacedDigit()
-						.font(.body)
-						.foregroundStyle(.secondary)
-						.frame(width: 24, alignment: .trailing)
-				}
-
-				groupedDivider()
-
 				SettingsRow(icon: "power", iconColor: .secondary, title: "Launch at Login") {
 					Toggle("", isOn: $launchAtLogin)
 						.toggleStyle(.switch)
@@ -349,6 +337,18 @@ struct SettingsView: View {
 					} catch {
 						launchAtLogin = !newValue
 					}
+				}
+
+				groupedDivider()
+
+				SettingsRow(icon: "slider.horizontal.3", iconColor: .secondary, title: "Scroll Sensitivity") {
+					Slider(value: $scrollSensitivity, in: sensitivityRange, step: 1)
+						.frame(width: 120)
+					Text("\(Int(scrollSensitivity))")
+						.monospacedDigit()
+						.font(.body)
+						.foregroundStyle(.secondary)
+						.frame(width: 24, alignment: .trailing)
 				}
 			}
 		}
