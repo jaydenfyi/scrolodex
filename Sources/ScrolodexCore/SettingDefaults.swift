@@ -10,7 +10,7 @@
 public enum SettingDefaults {
 
 	// MARK: - Visual
-	public static let peekOpacity: Double = 0.94
+	public static let peekOpacity: Double = 1.0
 	public static let peekEnabled: Bool = true
 	public static let theme: OverlayTheme = .default
 
