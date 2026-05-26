@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		SettingKey.registerDefaults()
 
 		let sensitivity = UserDefaults.standard.double(forKey: SettingKey.scrollSensitivity)
-		let threshold = sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity
+		let threshold = ScrollSensitivity.invert(sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity)
 
 		let coordinator = NavigationCoordinator(
 			windowStackProvider: windowStackProvider,
@@ -305,7 +305,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		let triggers = buildTriggers(globalVisual: globalVisual)
 		let desktopTriggers = buildDesktopTriggers()
 		let sensitivity = defaults.double(forKey: SettingKey.scrollSensitivity)
-		let threshold = sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity
+		let threshold = ScrollSensitivity.invert(sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity)
 
 		let dockConfigs = buildDockHoverConfigurations(globalVisual: globalVisual)
 		let enabledDockConfigs = dockConfigs.filter(\.enabled)

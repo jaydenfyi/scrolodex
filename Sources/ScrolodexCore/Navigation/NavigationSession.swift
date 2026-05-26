@@ -19,6 +19,13 @@ public enum SelectionMovement: Equatable, Sendable {
 
 public enum ScrollSensitivity {
 	public static let `default`: Double = 6
+	public static let max: Double = 20
+
+	/// Converts a user-facing sensitivity value (1...20, higher = more sensitive)
+	/// to the internal scroll threshold (higher = less sensitive).
+	public static func invert(_ sensitivity: Double) -> Double {
+		max - sensitivity + 1
+	}
 }
 
 public struct NavigationSession {
