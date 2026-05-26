@@ -95,7 +95,7 @@ jobs:
           mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
           cp "$RELEASE_DIR/Scrolodex" "$APP_DIR/Contents/MacOS/Scrolodex"
           cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
-          cp -R "$RELEASE_DIR/Scrolodex_Scrolodex.bundle" "$APP_DIR/Contents/Resources/"
+          cp Sources/Scrolodex/Resources/MenuBarIcon.svg "$APP_DIR/Contents/Resources/"
       - name: Ad-hoc sign
         run: codesign --force --sign - .build/arm64-apple-macosx/release/Scrolodex.app
       - name: Create zip

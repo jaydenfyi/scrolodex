@@ -15,8 +15,7 @@ let package = Package(
         .target(name: "ScrolodexCore"),
         .executableTarget(
             name: "Scrolodex",
-            dependencies: ["ScrolodexCore"],
-            resources: [.process("Resources")]
+            dependencies: ["ScrolodexCore"]
         ),
         .testTarget(name: "ScrolodexCoreTests", dependencies: ["ScrolodexCore"])
     ]

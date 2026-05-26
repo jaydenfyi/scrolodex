@@ -29,7 +29,7 @@ final class StatusBarController: NSObject {
 
 	private func menuBarIcon() -> NSImage? {
 		guard
-			let url = Bundle.module.url(
+			let url = Bundle.main.url(
 				forResource: MenuBarIconConfiguration.resourceName,
 				withExtension: MenuBarIconConfiguration.resourceExtension
 			), let image = NSImage(contentsOf: url)
