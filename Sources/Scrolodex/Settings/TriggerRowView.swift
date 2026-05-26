@@ -170,7 +170,7 @@ struct TriggerRowView: View {
 	private var advancedControls: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			settingsSubgroup {
-				settingToggleRow("Show overlay on hotkey press", isOn: $store.showOnPress)
+				settingToggleRow("Show overlay on trigger press", isOn: $store.showOnPress)
 				Divider()
 				settingToggleRow("Invert scroll direction", isOn: $store.invertDirection)
 			}
