@@ -6,14 +6,36 @@ Hold a modifier key and scroll to cycle through windows. Release to focus the se
 
 ## Install
 
+**Homebrew (prebuilt binary — recommended):**
+
 ```bash
 brew install --cask jaydenfyi/tap/scrolodex
 ```
+
+**Homebrew (build from source):**
+
+```bash
+brew install jaydenfyi/tap/scrolodex
+```
+
+Requires Xcode 15+ (`xcode-select --install`).
+
+**Manual download:**
+
+Download the latest `Scrolodex-x.x.x.zip` from [GitHub Releases](https://github.com/jaydenfyi/scrolodex/releases).
+Unzip and move `Scrolodex.app` to `/Applications`.
+On first launch, right-click the app and select **Open** to bypass Gatekeeper.
 
 ## Update
 
 ```bash
 brew upgrade --cask jaydenfyi/tap/scrolodex
+```
+
+## Uninstall
+
+```bash
+brew uninstall --cask jaydenfyi/tap/scrolodex
 ```
 
 ## Permissions
@@ -49,12 +71,6 @@ Click the menu-bar icon → **Settings...** to configure:
 ## Requirements
 
 - macOS 14 (Sonoma) or later
-
-## Uninstall
-
-```bash
-brew uninstall --cask jaydenfyi/tap/scrolodex
-```
 
 ## Building from Source
 
