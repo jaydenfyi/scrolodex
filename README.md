@@ -26,6 +26,10 @@ Download the latest `Scrolodex-x.x.x.zip` from [GitHub Releases](https://github.
 Unzip and move `Scrolodex.app` to `/Applications`.
 On first launch, right-click the app and select **Open** to bypass Gatekeeper.
 
+> **Note:** The app is ad-hoc signed (no Apple Developer ID). macOS will warn that it can't verify the developer.
+> The Homebrew cask handles this automatically by clearing the quarantine flag.
+> For manual installs, use the right-click → **Open** method on first launch, or run `xattr -cr /Applications/Scrolodex.app`.
+
 ## Update
 
 ```bash
