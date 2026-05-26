@@ -475,7 +475,7 @@ struct EventClassifierTests {
 
 	@Test("dock hover preview activates dock session")
 	func dockHoverPreview() {
-		let config = DockHoverConfiguration(enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue)
+		let config = DockHoverConfiguration(enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue, showOnPress: true)
 		let trigger = makeTrigger(flags: .maskAlternate)
 		let classifier = EventClassifier(triggers: [trigger], desktopTriggers: [])
 		var session = RouterSessionState()

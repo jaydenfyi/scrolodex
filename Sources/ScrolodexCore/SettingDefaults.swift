@@ -18,7 +18,7 @@ public enum SettingDefaults {
 	public static let animate: Bool = true
 	public static let wrapAround: Bool = true
 	public static let scrollSensitivity: Double = 6
-	public static let showOnPress: Bool = true
+	public static let showOnPress: Bool = false
 	public static let invertDirection: Bool = false
 	public static let keyboardNavigationEnabled: Bool = false
 

@@ -37,7 +37,7 @@ enum SettingKey {
 
 			// Dock
 			"dockHover.currentMonitor.enabled": false,
-			"dockHover.allMonitors.enabled": false,
+			"dockHover.allMonitors.enabled": true,
 
 			// Global visual & behavior
 			scrollSensitivity: SettingDefaults.scrollSensitivity,
