@@ -1,4 +1,10 @@
 # Changelog
+## 0.0.2 (2026-05-26)
+
+### Fixes
+
+- app crash on launch — use Bundle.main for menu bar icon
+
 ## 0.0.1 (2026-05-26)
 
 ### Fixes
