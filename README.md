@@ -1,67 +1,72 @@
 # Scrolodex
 
-A macOS menu-bar app that lets you switch between windows by scrolling.
+A macOS menu-bar app for switching between windows by scrolling.
 
-Hold a modifier key and scroll to cycle through the window stack under your cursor, across your screen, or within the same app. Release to focus the selected window.
-
-## Features
-
-- **Windows under cursor** — scroll the stack beneath the pointer
-- **All windows on screen** — cycle every visible window
-- **Same-app filtering** — limit switching to the frontmost app
-- **Dock icon hover** — scroll over Dock icons to switch that app's windows
-- **Desktop switching** — scroll between macOS Spaces
-- **Keyboard navigation** — step through windows with custom key bindings
-- **Trackpad gestures** — 3- and 4-finger swipe triggers
-- **Overlay modes** — tooltip badge, vertical list, or horizontal tile view
-- **Dark and light themes** — with peek previews and border highlights
+Hold a modifier key and scroll to cycle through windows. Release to focus the selected one.
 
 ## Install
 
-**Homebrew (build from source):**
-
 ```bash
-brew tap jaydenfyi/tap
-brew install scrolodex
+brew install --cask jaydenfyi/tap/scrolodex
 ```
 
-**Homebrew (prebuilt binary):**
+## Update
 
 ```bash
-brew tap jaydenfyi/tap
-brew install --cask scrolodex
-```
-
-**Manual:**
-
-Download the latest release from [GitHub Releases](https://github.com/jaydenfyi/scrolodex/releases).
-Unzip and move `Scrolodex.app` to `/Applications`.
-On first launch, right-click the app and select **Open** to bypass Gatekeeper.
-
-## Requirements
-
-- macOS 14 (Sonoma) or later
-- Xcode command-line tools (`xcode-select --install`)
-
-## Building from source
-
-```bash
-make build    # swift build
-make app      # build + create .app bundle + codesign
-make run      # build + launch the app
-make test     # run tests
-make release  # swift build -c release
-make clean    # remove .build
+brew upgrade --cask jaydenfyi/tap/scrolodex
 ```
 
 ## Permissions
 
-Scrolodex requires two system permissions:
+On first launch, macOS will prompt for two permissions:
 
-1. **Accessibility** — to detect modifier keys and raise windows
-2. **Screen Recording** — to capture window thumbnails for previews
+1. **Accessibility** — detect modifier keys and raise windows
+2. **Screen Recording** — capture window thumbnails for the overlay
 
-The app will prompt on first launch. You can also grant them manually in **System Settings → Privacy & Security**.
+You can also grant these in **System Settings → Privacy & Security**.
+
+> The app runs as a menu-bar item (no dock icon). Look for the scroll icon in the menu bar to confirm it's running.
+
+## Default Triggers
+
+| Trigger | Hotkey | Default |
+|---|---|---|
+| **Windows Under Cursor** | ⌥ scroll | ✅ On |
+| **All Windows on Screen** | ⌘⌥ scroll | ✅ On |
+| **Dock Windows** | Hover Dock icon + scroll | ✅ On |
+| **Desktop Spaces** | Scroll at screen edge | Off |
+
+Each trigger also supports **keyboard navigation** — step through windows with `` ⌥` `` (forward) and `` ⌥⇧` `` (backward) by default.
+
+## Settings
+
+Click the menu-bar icon → **Settings...** to configure:
+
+- **General** — Launch at Login, scroll sensitivity
+- **Triggers** — Enable/disable each trigger, set modifier keys, toggle overlay on press
+- **Appearance** — Overlay mode (tooltip/list/tile), theme, window preview
+
+## Requirements
+
+- macOS 14 (Sonoma) or later
+
+## Uninstall
+
+```bash
+brew uninstall --cask jaydenfyi/tap/scrolodex
+```
+
+## Building from Source
+
+```bash
+git clone https://github.com/jaydenfyi/scrolodex.git
+cd scrolodex
+make build    # swift build
+make app      # build + create .app bundle + codesign
+make run      # build + launch
+make test     # run tests (192 tests)
+make release  # swift build -c release
+```
 
 ## Architecture
 
@@ -70,7 +75,7 @@ The app will prompt on first launch. You can also grant them manually in **Syste
 | `Scrolodex` | AppKit entry point, overlay views, event taps, settings UI |
 | `ScrolodexCore` | Platform-agnostic logic — navigation state, filtering, coordinate math |
 
-`ScrolodexCore` has no AppKit dependency and is fully testable without a UI. The app target provides the concrete implementations (event taps, window capture, overlay panels) via protocols defined in the core.
+`ScrolodexCore` has no AppKit dependency and is fully testable without a UI. The app target provides concrete implementations (event taps, window capture, overlay panels) via protocols defined in the core.
 
 ## License
 
