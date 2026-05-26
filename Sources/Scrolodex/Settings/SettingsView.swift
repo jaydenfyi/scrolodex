@@ -68,8 +68,8 @@ struct SettingsView: View {
 					permissionsBanner
 				}
 				generalGroup
-				appearanceGroup
 				triggersGroup
+				appearanceGroup
 
 				HStack {
 					Spacer()
