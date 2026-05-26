@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: write # push prepare-release commit
     outputs:
+      has_release: ${{ steps.prepare.outputs.has_release }}
       sha: ${{ steps.commit.outputs.sha }}
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -31,23 +32,34 @@ jobs:
       - name: Install Knope
         run: brew install knope-dev/tap/knope
       - name: Prepare release
-        run: knope prepare-release --verbose
+        id: prepare
+        run: |
+          if knope prepare-release --verbose; then
+            echo "has_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_release=false" >> "$GITHUB_OUTPUT"
+            echo "No new changes to release — skipping downstream jobs."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Push release commit
+        if: steps.prepare.outputs.has_release == 'true'
         run: git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Store commit SHA
+        if: steps.prepare.outputs.has_release == 'true'
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Store version
+        if: steps.prepare.outputs.has_release == 'true'
         id: version
         run: echo "version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build
     needs: prepare-release
+    if: needs.prepare-release.outputs.has_release == 'true'
     runs-on: macos-15
     permissions:
       contents: read
@@ -85,6 +97,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [prepare-release, build]
+    if: needs.prepare-release.outputs.has_release == 'true'
     runs-on: macos-15
     permissions:
       contents: write # create GitHub Release + tag
@@ -121,6 +134,7 @@ jobs:
   update-tap:
     name: Update Homebrew Tap
     needs: [prepare-release, release]
+    if: needs.prepare-release.outputs.has_release == 'true'
     runs-on: macos-15
     permissions:
       contents: read # read Scrolodex source archive + release asset with GITHUB_TOKEN
