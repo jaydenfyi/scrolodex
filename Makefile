@@ -21,6 +21,7 @@ app: build
 	cp "$(BUILD_DIR)/$(APP_NAME)" "$(APP_DIR)/Contents/MacOS/$(APP_NAME)"
 	cp "Resources/Info.plist" "$(APP_DIR)/Contents/Info.plist"
 	cp "Sources/Scrolodex/Resources/MenuBarIcon.svg" "$(APP_DIR)/Contents/Resources/"
+	cp "Sources/Scrolodex/Resources/AppIcon.icns" "$(APP_DIR)/Contents/Resources/AppIcon.icns"
 	codesign --force --sign "Scrolodex Dev" "$(APP_DIR)"
 
 app-release: release
@@ -29,6 +30,7 @@ app-release: release
 	cp "$(RELEASE_DIR)/$(APP_NAME)" "$(RELEASE_APP_DIR)/Contents/MacOS/$(APP_NAME)"
 	cp "Resources/Info.plist" "$(RELEASE_APP_DIR)/Contents/Info.plist"
 	cp "Sources/Scrolodex/Resources/MenuBarIcon.svg" "$(RELEASE_APP_DIR)/Contents/Resources/"
+	cp "Sources/Scrolodex/Resources/AppIcon.icns" "$(RELEASE_APP_DIR)/Contents/Resources/AppIcon.icns"
 	codesign --force --sign - "$(RELEASE_APP_DIR)"
 
 zip: app-release
