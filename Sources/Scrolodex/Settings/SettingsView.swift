@@ -12,6 +12,10 @@ struct SettingsView: View {
 	@State private var expandedSettingsCard: String?
 	@State private var expandedAdvancedCards: Set<String> = []
 
+	private var appVersion: String {
+		Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+	}
+
 	@AppStorage(SettingKey.scrollSensitivity) private var scrollSensitivity: Double = SettingDefaults.scrollSensitivity
 	@AppStorage(SettingKey.theme) private var theme: String = SettingDefaults.theme.rawValue
 	@AppStorage(SettingKey.animate) private var animate: Bool = SettingDefaults.animate
@@ -66,6 +70,13 @@ struct SettingsView: View {
 				triggersGroup
 				appearanceGroup
 				generalGroup
+
+				HStack {
+					Spacer()
+					Text("Scrolodex \(appVersion)")
+						.font(.caption)
+						.foregroundStyle(.tertiary)
+				}
 			}
 			.padding(20)
 		}
