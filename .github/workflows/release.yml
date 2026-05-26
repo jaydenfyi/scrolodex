@@ -34,14 +34,32 @@ jobs:
       - name: Prepare release
         id: prepare
         run: |
-          if knope prepare-release --verbose; then
+          set +e
+          OUTPUT="$(knope prepare-release --verbose 2>&1)"
+          STATUS=$?
+          set -e
+          printf '%s\n' "$OUTPUT"
+
+          if [ "$STATUS" -eq 0 ]; then
             echo "has_release=true" >> "$GITHUB_OUTPUT"
-          else
+          elif printf '%s\n' "$OUTPUT" | grep -q "No packages are ready to release"; then
             echo "has_release=false" >> "$GITHUB_OUTPUT"
             echo "No new changes to release — skipping downstream jobs."
+          else
+            exit "$STATUS"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Remove consumed changesets from release commit
+        if: steps.prepare.outputs.has_release == 'true'
+        run: |
+          shopt -s nullglob
+          changesets=(.changeset/*.md)
+          if [ "${#changesets[@]}" -gt 0 ]; then
+            rm -f "${changesets[@]}"
+            git add .changeset
+            git commit --amend --no-edit
+          fi
       - name: Push release commit
         if: steps.prepare.outputs.has_release == 'true'
         run: git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main

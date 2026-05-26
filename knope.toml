@@ -22,7 +22,7 @@ command = "/usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString $version'
 
 [[workflows.steps]]
 type = "Command"
-command = "rm -f .changeset/*.md ; git add Resources/Info.plist CHANGELOG.md .changeset/"
+command = "git add Resources/Info.plist CHANGELOG.md"
 
 [[workflows.steps]]
 type = "Command"
