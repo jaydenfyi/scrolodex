@@ -3,9 +3,9 @@ import CoreGraphics
 public struct HotkeyConfiguration: Equatable, Sendable {
 	public let flags: CGEventFlags
 
-	public static let defaultScrollAtPoint = HotkeyConfiguration(flags: [.maskCommand, .maskAlternate])
+	public static let defaultScrollAtPoint = HotkeyConfiguration(flags: [.maskAlternate])
 	public static let defaultScrollAllWindows = HotkeyConfiguration(flags: [
-		.maskCommand, .maskAlternate, .maskControl,
+		.maskCommand, .maskAlternate,
 	])
 	public static let defaultDesktopSwitch = HotkeyConfiguration(flags: [.maskAlternate, .maskShift])
 

@@ -68,7 +68,7 @@ final class TriggerSettingsStore {
 			Self.migrateIfNeeded(from: migration, to: prefix, defaults: d)
 		}
 
-		self.enabled = d.object(forKey: "\(prefix).enabled") as? Bool ?? (defaultFlags > 0)
+		self.enabled = d.bool(forKey: "\(prefix).enabled")
 		self.flags = d.object(forKey: "\(prefix).flags") as? Double ?? defaultFlags
 		self.overlay = d.string(forKey: "\(prefix).overlay") ?? SettingDefaults.overlayMode.rawValue
 		self.monitorScope = d.string(forKey: "\(prefix).monitorScope") ?? SettingDefaults.monitorScope.rawValue

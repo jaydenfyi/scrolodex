@@ -48,7 +48,7 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 		if let migration = migrationPrefix {
 			migrateDefaults(from: migration, to: prefix, defaults: defaults)
 		}
-		let enabled = defaults.object(forKey: "\(prefix).enabled") as? Bool ?? false
+		let enabled = defaults.bool(forKey: "\(prefix).enabled")
 		let rawFlags = defaults.double(forKey: "\(prefix).flags")
 		let modifierFlags = rawFlags > 0 ? UInt64(rawFlags) : CGEventFlags.maskAlternate.rawValue
 		let monitorScopeRaw = defaults.string(forKey: "\(prefix).monitorScope") ?? defaultMonitorScope.rawValue

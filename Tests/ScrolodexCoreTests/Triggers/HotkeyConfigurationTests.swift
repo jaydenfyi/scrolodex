@@ -4,18 +4,18 @@ import Testing
 
 @Suite("Hotkey configuration")
 struct HotkeyConfigurationTests {
-    @Test("default scroll at point is Command + Option")
+    @Test("default scroll at point is Option")
     func defaultScrollAtPoint() {
         let config = HotkeyConfiguration.defaultScrollAtPoint
-        #expect(config.flags == [.maskCommand, .maskAlternate])
-        #expect(config.displayName == "Command + Option")
+        #expect(config.flags == [.maskAlternate])
+        #expect(config.displayName == "Option")
     }
 
-    @Test("default scroll all windows is Command + Option + Control")
+    @Test("default scroll all windows is Command + Option")
     func defaultScrollAllWindows() {
         let config = HotkeyConfiguration.defaultScrollAllWindows
-        #expect(config.flags == [.maskCommand, .maskAlternate, .maskControl])
-        #expect(config.displayName == "Command + Option + Control")
+        #expect(config.flags == [.maskCommand, .maskAlternate])
+        #expect(config.displayName == "Command + Option")
     }
 
     @Test("default desktop switch is Option + Shift")

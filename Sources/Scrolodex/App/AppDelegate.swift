@@ -21,6 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		Log.info("launched bundle=%@", Bundle.main.bundleIdentifier ?? "unknown")
 
+		SettingKey.registerDefaults()
+
 		let sensitivity = UserDefaults.standard.double(forKey: SettingKey.scrollSensitivity)
 		let threshold = sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity
 
