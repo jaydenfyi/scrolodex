@@ -367,17 +367,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		startRevocationMonitor(with: coordinator)
 	}
 
-	private func buildDockHoverConfigurations(globalVisual: GlobalVisualSettings) -> [DockHoverConfiguration] {
-		return [
-			// Feature flag: dock simplified to single option
-			// DockHoverConfiguration.fromUserDefaults(
-			// 	prefix: "dockHover.currentMonitor", defaultMonitorScope: .currentMonitor,
-			// 	globalAnimate: globalAnimate, globalWrapAround: globalWrapAround),
-			DockHoverConfiguration.fromUserDefaults(
-				prefix: "dockHover.allMonitors", defaultMonitorScope: .allMonitors,
-				globalAnimate: globalVisual.animate, globalWrapAround: globalVisual.wrapAround,
-				migrationPrefix: "dockHover"),
-		]
+	private func buildDockHoverConfigurations(globalVisual _: GlobalVisualSettings) -> [DockHoverConfiguration] {
+		UserDefaultsRuntimeConfigurationReader.read().dockHoverConfigurations
 	}
 
 	private func restartEventTap(with coordinator: NavigationCoordinator) {
