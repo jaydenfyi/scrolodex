@@ -1,8 +1,14 @@
-# Scrolodex
+<div align="center">
 
-A super simple window switcher for macOS.
+# scrolodex
+
+**a super simple window switcher for macOS**
 
 Hold ⌥ (Option) and scroll to cycle through windows under your cursor. Release to focus the selected one.
+
+https://github.com/user-attachments/assets/d7c21caf-da97-449c-9013-8972b96cd0ea
+
+</div>
 
 ## Install
 
@@ -109,7 +115,7 @@ Click the menu bar icon → **Settings...**
 | **Windows Under Cursor** | ⌥ + scroll | Cycle windows beneath the pointer. |
 | **All Windows** | ⌘⌥ + scroll | Cycle all visible windows on the active display. |
 | **Dock Windows** | Hover + ⌥ + scroll | Cycle the hovered app's windows. Overlay anchors to the Dock icon. |
-| **Desktop Spaces** | ⌥⇧ (disabled) | Scroll at screen edge to switch Spaces. |
+| **Desktop Spaces** | ⌥⇧ + scroll (disabled) | Switch between desktop Spaces. |
 
 ### Appearance
 
