@@ -1,5 +1,6 @@
 import AppKit
 import ScrolodexCore
+import ScrolodexSettings
 
 @MainActor
 final class StatusBarController: NSObject {

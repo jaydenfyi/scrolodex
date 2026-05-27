@@ -1,5 +1,6 @@
 import Foundation
 import ScrolodexCore
+import ScrolodexSettings
 
 struct GlobalVisualSettings: Sendable {
 	let theme: OverlayTheme

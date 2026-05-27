@@ -1,6 +1,7 @@
 import ApplicationServices
 import CoreGraphics
 import ScrolodexCore
+import ScrolodexSettings
 import ServiceManagement
 import SwiftUI
 
