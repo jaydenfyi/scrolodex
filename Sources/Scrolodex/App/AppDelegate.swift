@@ -24,14 +24,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		SettingKey.registerDefaults()
 
-		let sensitivity = UserDefaults.standard.double(forKey: SettingKey.scrollSensitivity)
-		let threshold = ScrollSensitivity.invert(sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity)
+		let runtime = UserDefaultsRuntimeConfigurationReader.read()
 
 		let coordinator = NavigationCoordinator(
 			windowStackProvider: windowStackProvider,
 			overlayController: overlayController,
 			accessibilityWindowController: accessibilityWindowController,
-			scrollThreshold: threshold
+			scrollThreshold: runtime.scrollThreshold
 		)
 		navigationCoordinator = coordinator
 
@@ -111,181 +110,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		restartEventTap(with: coordinator)
 	}
 
-	private func buildTriggers(globalVisual: GlobalVisualSettings) -> [TriggerHotkey] {
-		let defaults = UserDefaults.standard
-
-		let configs: [(TriggerConfiguration, String)] = [
-			(TriggerConfiguration(scope: .underCursor, filter: .allApps), "trigger.underCursor.allApps"),
-			(
-				TriggerConfiguration(scope: .currentScreen, filter: .allApps),
-				"trigger.currentScreen.allApps"
-			),
-			// Feature flag: same-app triggers disabled
-			// (TriggerConfiguration(scope: .underCursor, filter: .sameApp), "trigger.underCursor.sameApp"),
-			// (
-			// 	TriggerConfiguration(scope: .currentScreen, filter: .sameApp),
-			// 	"trigger.currentScreen.sameApp"
-			// ),
-		]
-
-		return configs.compactMap { config, prefix in
-			let enabled = defaults.bool(forKey: "\(prefix).enabled")
-			guard enabled else { return nil }
-
-			let rawFlags = defaults.double(forKey: "\(prefix).flags")
-			let flags = CGEventFlags(rawValue: UInt64(rawFlags))
-			guard !flags.isEmpty else { return nil }
-
-			let overlayRaw =
-				defaults.string(forKey: "\(prefix).overlay")
-				?? SettingDefaults.overlayMode.rawValue
-			let overlayMode = OverlayPresentationMode(rawValue: overlayRaw) ?? SettingDefaults.overlayMode
-			let monitorScopeRaw =
-				defaults.string(forKey: "\(prefix).monitorScope")
-				?? SettingDefaults.monitorScope.rawValue
-			let monitorScope = MonitorScope(rawValue: monitorScopeRaw) ?? SettingDefaults.monitorScope
-
-			let keyboardNav = buildKeyboardNavigation(prefix: prefix)
-
-			let showOnPress = defaults.object(forKey: "\(prefix).showOnPress") as? Bool ?? SettingDefaults.showOnPress
-			let invertDirection = defaults.bool(forKey: "\(prefix).invertDirection")
-
-			return TriggerHotkey(
-				configuration: config,
-				hotkey: HotkeyConfiguration(flags: flags),
-				overlayMode: overlayMode,
-				peekEnabled: globalVisual.peekEnabled,
-				peekOpacity: globalVisual.peekOpacity,
-				theme: globalVisual.theme,
-				monitorScope: monitorScope,
-				showOnPress: showOnPress,
-				invertDirection: invertDirection,
-				animate: globalVisual.animate,
-				wrapAround: globalVisual.wrapAround,
-				keyboardNavigation: keyboardNav
-			)
-		}
-	}
-
-	private func buildGestureConfigs(globalVisual: GlobalVisualSettings) -> [GestureTriggerConfig] {
-		let defaults = UserDefaults.standard
-
-		let triggerEntries: [(TriggerConfiguration, String)] = [
-			(TriggerConfiguration(scope: .underCursor, filter: .allApps), "trigger.underCursor.allApps"),
-			(
-				TriggerConfiguration(scope: .currentScreen, filter: .allApps),
-				"trigger.currentScreen.allApps"
-			),
-			// Feature flag: same-app triggers disabled
-			// (TriggerConfiguration(scope: .underCursor, filter: .sameApp), "trigger.underCursor.sameApp"),
-			// (
-			// 	TriggerConfiguration(scope: .currentScreen, filter: .sameApp),
-			// 	"trigger.currentScreen.sameApp"
-			// ),
-		]
-
-		return triggerEntries.compactMap { config, prefix in
-			let enabled = defaults.bool(forKey: "\(prefix).enabled")
-			guard enabled else { return nil }
-
-			let rawFingerCount = defaults.integer(forKey: "\(prefix).gesture")
-			guard let fingerCount = TrackpadFingerCount(rawValue: rawFingerCount) else { return nil }
-
-			let overlayRaw =
-				defaults.string(forKey: "\(prefix).overlay")
-				?? OverlayPresentationMode.default.rawValue
-			let overlayMode = OverlayPresentationMode(rawValue: overlayRaw) ?? .default
-			let monitorScopeRaw =
-				defaults.string(forKey: "\(prefix).monitorScope")
-				?? MonitorScope.currentMonitor.rawValue
-			let monitorScope = MonitorScope(rawValue: monitorScopeRaw) ?? .currentMonitor
-			let invertDirection = defaults.bool(forKey: "\(prefix).invertDirection")
-
-			return GestureTriggerConfig(
-				fingerCount: fingerCount,
-				scope: config.scope,
-				filter: config.filter,
-				overlayMode: overlayMode,
-				peekEnabled: globalVisual.peekEnabled,
-				peekOpacity: globalVisual.peekOpacity,
-				theme: globalVisual.theme,
-				monitorScope: monitorScope,
-				invertDirection: invertDirection,
-				animate: globalVisual.animate,
-				wrapAround: globalVisual.wrapAround
-			)
-		}
-	}
-
-	private func buildDesktopTriggers() -> [DesktopSwitchTrigger] {
-		let defaults = UserDefaults.standard
-		let enabled = defaults.bool(forKey: SettingKey.DesktopSwitch.enabled)
-		guard enabled else { return [] }
-
-		let rawFlags =
-			defaults.object(forKey: SettingKey.DesktopSwitch.flags) as? Double
-			?? Double(HotkeyConfiguration.defaultDesktopSwitch.flags.rawValue)
-		let flags = CGEventFlags(rawValue: UInt64(rawFlags))
-		guard !flags.isEmpty else { return [] }
-
-		let invertDirection = defaults.bool(forKey: SettingKey.DesktopSwitch.invertDirection)
-		let animateScroll = defaults.object(forKey: SettingKey.DesktopSwitch.animate) as? Bool ?? SettingDefaults.desktopSwitchAnimate
-		let wrapAround = defaults.object(forKey: SettingKey.DesktopSwitch.wrapAround) as? Bool ?? SettingDefaults.desktopSwitchWrapAround
-		let keyboardNav = buildDesktopKeyboardNavigation()
-
-		return [
-			DesktopSwitchTrigger(
-				hotkey: HotkeyConfiguration(flags: flags),
-				invertDirection: invertDirection,
-				animateScroll: animateScroll,
-				wrapAround: wrapAround,
-				keyboardNavigation: keyboardNav
-			)
-		]
-	}
-
-	private func buildDesktopKeyboardNavigation() -> KeyboardNavigationBinding {
-		let defaults = UserDefaults.standard
-		let kbEnabled = defaults.bool(forKey: SettingKey.DesktopSwitch.keyboardNavEnabled)
-		let forward = buildDesktopKeyBinding(direction: "forward")
-		let backward = buildDesktopKeyBinding(direction: "backward")
-		return KeyboardNavigationBinding(enabled: kbEnabled, forward: forward, backward: backward)
-	}
-
-	private func buildDesktopKeyBinding(direction: String) -> KeyboardHotkeyConfiguration? {
-		let defaults = UserDefaults.standard
-		let flagsKey =
-			direction == "forward"
-			? SettingKey.DesktopSwitch.keyboardNavForwardFlags
-			: SettingKey.DesktopSwitch.keyboardNavBackwardFlags
-		let keyCodeKey =
-			direction == "forward"
-			? SettingKey.DesktopSwitch.keyboardNavForwardKeyCode
-			: SettingKey.DesktopSwitch.keyboardNavBackwardKeyCode
-		let rawFlags = defaults.double(forKey: flagsKey)
-		let rawKeyCode = defaults.double(forKey: keyCodeKey)
-		let flags = CGEventFlags(rawValue: UInt64(rawFlags))
-		let keyCode = CGKeyCode(rawKeyCode)
-		guard keyCode != 0 else { return nil }
-		return KeyboardHotkeyConfiguration(flags: flags, keyCode: keyCode)
-	}
-
-	private func buildKeyboardNavigation(prefix: String) -> KeyboardNavigationBinding {
-		let kbEnabled = UserDefaults.standard.bool(forKey: "\(prefix).keyboardNav.enabled")
-		let forward = buildKeyBinding(prefix: prefix, direction: "forward")
-		let backward = buildKeyBinding(prefix: prefix, direction: "backward")
-		return KeyboardNavigationBinding(enabled: kbEnabled, forward: forward, backward: backward)
-	}
-
-	private func buildKeyBinding(prefix: String, direction: String) -> KeyboardHotkeyConfiguration? {
-		let rawFlags = UserDefaults.standard.double(forKey: "\(prefix).keyboardNav.\(direction)Flags")
-		let rawKeyCode = UserDefaults.standard.double(forKey: "\(prefix).keyboardNav.\(direction)KeyCode")
-		let flags = CGEventFlags(rawValue: UInt64(rawFlags))
-		let keyCode = CGKeyCode(rawKeyCode)
-		guard keyCode != 0 else { return nil }
-		return KeyboardHotkeyConfiguration(flags: flags, keyCode: keyCode)
-	}
-
 	private func startEventTap(with coordinator: NavigationCoordinator) {
 		guard eventTapController == nil else { return }
 		guard permissionController.allPermissionsGranted else {
@@ -294,22 +118,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			return
 		}
 
-		let globallyDisabled = UserDefaults.standard.object(forKey: SettingKey.disabled) as? Bool ?? false
-		guard !globallyDisabled else {
+		let runtime = UserDefaultsRuntimeConfigurationReader.read()
+		guard !runtime.globallyDisabled else {
 			Log.info("globally disabled; skipping event tap")
 			return
 		}
 
-		let defaults = UserDefaults.standard
-		let globalVisual = GlobalVisualSettings.read(from: defaults)
-
-		let triggers = buildTriggers(globalVisual: globalVisual)
-		let desktopTriggers = buildDesktopTriggers()
-		let sensitivity = defaults.double(forKey: SettingKey.scrollSensitivity)
-		let threshold = ScrollSensitivity.invert(sensitivity > 0 ? sensitivity : SettingDefaults.scrollSensitivity)
-
-		let dockConfigs = buildDockHoverConfigurations(globalVisual: globalVisual)
-		let enabledDockConfigs = dockConfigs.filter(\.enabled)
+		let enabledDockConfigs = runtime.dockHoverConfigurations.filter(\.enabled)
 		if !enabledDockConfigs.isEmpty, dockObserver == nil {
 			let observer = DockObserver()
 			observer.onHoverChanged = { info in
@@ -319,26 +134,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			dockObserver = observer
 		}
 
-		guard !triggers.isEmpty || !desktopTriggers.isEmpty || !enabledDockConfigs.isEmpty else {
+		guard !runtime.triggers.isEmpty || !runtime.desktopTriggers.isEmpty || !enabledDockConfigs.isEmpty else {
 			Log.info("no triggers enabled; skipping event tap")
 			return
 		}
 
-		let gestureConfigs = buildGestureConfigs(globalVisual: globalVisual)
-
 		let dockHandler = DockActionHandler(
 			coordinator: coordinator,
-			scrollThreshold: threshold,
-			peekEnabled: globalVisual.peekEnabled,
-			peekOpacity: globalVisual.peekOpacity,
-			theme: globalVisual.theme
+			scrollThreshold: runtime.scrollThreshold,
+			peekEnabled: runtime.appearance.peekEnabled,
+			peekOpacity: runtime.appearance.peekOpacity,
+			theme: runtime.appearance.theme
 		)
 
 		let eventTapController = EventTapController(
 			coordinator: coordinator,
-			triggers: triggers,
-			desktopTriggers: desktopTriggers,
-			desktopScrollThreshold: threshold,
+			triggers: runtime.triggers,
+			desktopTriggers: runtime.desktopTriggers,
+			desktopScrollThreshold: runtime.scrollThreshold,
 			dockObserver: dockObserver,
 			dockHoverConfigs: enabledDockConfigs,
 			dockHandler: dockHandler,
@@ -349,15 +162,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		eventTapController.start()
 		self.eventTapController = eventTapController
 
-		if !gestureConfigs.isEmpty {
+		if !runtime.gestureConfigs.isEmpty {
 			let observer = TrackpadGestureObserver(
 				coordinator: coordinator,
-				scrollThreshold: threshold,
+				scrollThreshold: runtime.scrollThreshold,
 				dockObserver: dockObserver,
 				dockHoverConfigs: enabledDockConfigs,
 				dockHandler: dockHandler
 			)
-			observer.start(triggerConfigs: gestureConfigs)
+			observer.start(triggerConfigs: runtime.gestureConfigs)
 			self.gestureObserver = observer
 		} else {
 			gestureObserver?.stop()
@@ -365,10 +178,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 
 		startRevocationMonitor(with: coordinator)
-	}
-
-	private func buildDockHoverConfigurations(globalVisual _: GlobalVisualSettings) -> [DockHoverConfiguration] {
-		UserDefaultsRuntimeConfigurationReader.read().dockHoverConfigurations
 	}
 
 	private func restartEventTap(with coordinator: NavigationCoordinator) {
