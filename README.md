@@ -1,8 +1,8 @@
 # Scrolodex
 
-A macOS menu-bar app for switching between windows by scrolling.
+A super simple window switcher for macOS.
 
-Hold a modifier key and scroll to cycle through windows. Release to focus the selected one.
+Hold ⌥ (Option) and scroll to cycle through windows under your cursor. Release to focus the selected one.
 
 ## Install
 
@@ -24,11 +24,25 @@ Requires Xcode 15+ (`xcode-select --install`).
 
 Download the latest `Scrolodex-x.x.x.zip` from [GitHub Releases](https://github.com/jaydenfyi/scrolodex/releases).
 Unzip and move `Scrolodex.app` to `/Applications`.
-On first launch, right-click the app and select **Open** to bypass Gatekeeper.
+
+**Build from source:**
+
+```bash
+git clone https://github.com/jaydenfyi/scrolodex.git
+cd scrolodex
+make app      # build + create .app bundle + codesign
+make run      # launch
+```
+
+Requires Xcode 15+ (`xcode-select --install`).
 
 > **Note:** The app is ad-hoc signed (no Apple Developer ID). macOS will warn that it can't verify the developer.
 > The Homebrew cask handles this automatically by clearing the quarantine flag.
-> For manual installs, use the right-click → **Open** method on first launch, or run `xattr -cr /Applications/Scrolodex.app`.
+> For manual installs, use the right-click → **Open** shortcut on first launch:
+> 1. **Right-click** (secondary click) `Scrolodex.app` in Finder and select **Open**
+> 2. Click **Open** in the dialog — this bypasses Gatekeeper for this launch only
+> 3. If the "Open" button isn't shown, go to **System Settings → Privacy & Security** and click **Open Anyway** next to the "Scrolodex was blocked" message
+> Alternatively, run `xattr -cr /Applications/Scrolodex.app` in Terminal.
 
 ## Update
 
@@ -46,56 +60,84 @@ brew uninstall --cask jaydenfyi/tap/scrolodex
 
 On first launch, macOS will prompt for two permissions:
 
-1. **Accessibility** — detect modifier keys and raise windows
-2. **Screen Recording** — capture window thumbnails for the overlay
+1. **Accessibility** — detect modifier keys (⌘⌥⌃⇧) and raise (focus) the selected window via the Accessibility API
+2. **Screen Recording** — capture window thumbnails for the list/tile overlay modes
 
 You can also grant these in **System Settings → Privacy & Security**.
 
 > The app runs as a menu-bar item (no dock icon). Look for the scroll icon in the menu bar to confirm it's running.
 
-## Default Triggers
+---
 
-| Trigger | Hotkey | Default |
+## Quick Start
+
+The default configuration covers the most common workflows out of the box:
+
+| Trigger | Modifier | What it does |
 |---|---|---|
-| **Windows Under Cursor** | ⌥ scroll | ✅ On |
-| **All Windows on Screen** | ⌘⌥ scroll | ✅ On |
-| **Dock Windows** | Hover Dock icon + scroll | ✅ On |
-| **Desktop Spaces** | Scroll at screen edge | Off |
+| **Windows Under Cursor** | Hold ⌥ + scroll | Cycle through windows beneath the pointer |
+| **All Windows** | Hold ⌘⌥ + scroll | Cycle every visible window on the active display |
+| **Dock Windows** | Hover a Dock icon, hold ⌥ + scroll | Cycle the hovered app's windows |
 
-Each trigger also supports **keyboard navigation** — step through windows with `` ⌥` `` (forward) and `` ⌥⇧` `` (backward) by default.
+You can also step through windows using keyboard navigation:
 
-## Settings
+| Binding | Default | What it does |
+|---|---|---|
+| Forward | `` ⌥` `` (Option + backtick) | Select next window |
+| Backward | `` ⌥⇧` `` (Option + Shift + backtick) | Select previous window |
+| Escape | `⎋` | Cancel the session |
 
-Click the menu-bar icon → **Settings...** to configure:
+> Press the keyboard binding **without** holding the scroll modifier to activate the trigger and step immediately (keyboard-only activation).
 
-- **General** — Launch at Login, scroll sensitivity
-- **Triggers** — Enable/disable each trigger, set modifier keys, toggle overlay on press
-- **Appearance** — Overlay mode (tooltip/list/tile), theme, window preview
+---
+
+## Settings Overview
+
+Click the menu bar icon → **Settings...**
+
+### General
+
+| Setting | Default | Description |
+|---|---|---|
+| Launch at Login | Off | Register as a macOS Login Item |
+| Scroll Sensitivity | 6 (1–20) | Higher = more responsive |
+
+### Triggers
+
+| Trigger | Default Modifier | Description |
+|---|---|---|
+| **Windows Under Cursor** | ⌥ + scroll | Cycle windows beneath the pointer. |
+| **All Windows** | ⌘⌥ + scroll | Cycle all visible windows on the active display. |
+| **Dock Windows** | Hover + ⌥ + scroll | Cycle the hovered app's windows. Overlay anchors to the Dock icon. |
+| **Desktop Spaces** | ⌥⇧ (disabled) | Scroll at screen edge to switch Spaces. |
+
+### Appearance
+
+| Setting | Default | Description |
+|---|---|---|
+| Theme | System | Dark / Light — follows macOS appearance |
+| Show Window Preview | On | Border outline first, snapshot thumbnail at 50–100% opacity |
+| Animate scrolling | On | Overlay transition animations |
+| Wrap around | On | Scroll past last window wraps to first |
+
+### Overlay Modes
+
+| Mode | Description |
+|---|---|
+| **Tooltip** *(default)* | Small badge near cursor — window title, app icon, position counter |
+| **List** | Vertical rows with thumbnails, selection highlight, animated scroll |
+| **Tile** | Horizontal scrolling tiles with thumbnails |
+| **None** | No overlay, only the window preview highlight |
+
+---
 
 ## Requirements
 
-- macOS 14 (Sonoma) or later
+- **macOS 14 (Sonoma)** or later
+- **Accessibility permission** — detect modifier keys, raise/focus windows
+- **Screen Recording permission** — window thumbnails for list/tile overlays and window preview
 
-## Building from Source
-
-```bash
-git clone https://github.com/jaydenfyi/scrolodex.git
-cd scrolodex
-make build    # swift build
-make app      # build + create .app bundle + codesign
-make run      # build + launch
-make test     # run tests (192 tests)
-make release  # swift build -c release
-```
-
-## Architecture
-
-| Target | Description |
-|---|---|
-| `Scrolodex` | AppKit entry point, overlay views, event taps, settings UI |
-| `ScrolodexCore` | Platform-agnostic logic — navigation state, filtering, coordinate math |
-
-`ScrolodexCore` has no AppKit dependency and is fully testable without a UI. The app target provides concrete implementations (event taps, window capture, overlay panels) via protocols defined in the core.
+---
 
 ## License
 
