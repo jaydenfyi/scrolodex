@@ -130,7 +130,7 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 
 			let enabled = defaults.bool(forKey: "\(entry.prefix).enabled")
 			let rawFlags = defaults.double(forKey: "\(entry.prefix).flags")
-			let modifierFlags = rawFlags > 0 ? UInt64(rawFlags) : CGEventFlags.maskAlternate.rawValue
+			let modifierFlags = rawFlags > 0 ? UInt64(rawFlags) : entry.defaultModifierFlags
 			let monitorScopeRaw = defaults.string(forKey: "\(entry.prefix).monitorScope") ?? MonitorScope.allMonitors.rawValue
 			let overlayRaw = defaults.string(forKey: "\(entry.prefix).overlay") ?? SettingDefaults.overlayMode.rawValue
 			let kbNavEnabled = defaults.object(forKey: "\(entry.prefix).keyboardNav.enabled") as? Bool ?? false
