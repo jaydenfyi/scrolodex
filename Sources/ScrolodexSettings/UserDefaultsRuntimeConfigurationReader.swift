@@ -124,6 +124,9 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 				invertDirection: settings.invertDirection,
 				animate: appearance.animate,
 				wrapAround: appearance.wrapAround,
+				peekEnabled: appearance.peekEnabled,
+				peekOpacity: appearance.peekOpacity,
+				theme: appearance.theme,
 				keyboardNavigation: keyboardNav
 			)
 		}

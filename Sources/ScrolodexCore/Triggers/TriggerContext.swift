@@ -82,9 +82,6 @@ public struct TriggerContext: Equatable, Sendable {
 
 	public static func from(
 		dockConfig: DockHoverConfiguration,
-		peekEnabled: Bool,
-		peekOpacity: Double,
-		theme: OverlayTheme,
 		bundleID: String,
 		scrollThreshold: Double
 	) -> TriggerContext {
@@ -92,9 +89,9 @@ public struct TriggerContext: Equatable, Sendable {
 			scope: .dockHover,
 			filter: .sameApp,
 			overlayMode: dockConfig.overlayMode,
-			peekEnabled: peekEnabled,
-			peekOpacity: peekOpacity,
-			theme: theme,
+			peekEnabled: dockConfig.peekEnabled,
+			peekOpacity: dockConfig.peekOpacity,
+			theme: dockConfig.theme,
 			monitorScope: dockConfig.monitorScope,
 			invertDirection: dockConfig.invertDirection,
 			animate: dockConfig.animate,

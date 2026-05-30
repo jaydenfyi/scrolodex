@@ -141,10 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 		let dockHandler = DockActionHandler(
 			coordinator: coordinator,
-			scrollThreshold: runtime.scrollThreshold,
-			peekEnabled: runtime.appearance.peekEnabled,
-			peekOpacity: runtime.appearance.peekOpacity,
-			theme: runtime.appearance.theme
+			scrollThreshold: runtime.scrollThreshold
 		)
 
 		let eventTapController = EventTapController(

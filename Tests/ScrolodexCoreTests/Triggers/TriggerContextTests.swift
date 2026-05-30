@@ -61,9 +61,10 @@ struct TriggerContextTests {
         let config = DockHoverConfiguration(
             enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue,
             monitorScope: .allMonitors, overlayMode: .list,
-            invertDirection: true, animate: false, wrapAround: false)
+            invertDirection: true, animate: false, wrapAround: false,
+            peekEnabled: true, peekOpacity: 0.8, theme: .light)
         let context = TriggerContext.from(
-            dockConfig: config, peekEnabled: true, peekOpacity: 0.8, theme: OverlayTheme.light,
+            dockConfig: config,
             bundleID: "com.example.app", scrollThreshold: 6)
 
         #expect(context.scope == .dockHover)
@@ -83,9 +84,10 @@ struct TriggerContextTests {
     func dockConfigDisablesPeek() {
         let config = DockHoverConfiguration(
             enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue,
-            monitorScope: .currentMonitor)
+            monitorScope: .currentMonitor,
+            peekEnabled: false)
         let context = TriggerContext.from(
-            dockConfig: config, peekEnabled: false, peekOpacity: 0.94, theme: OverlayTheme.default,
+            dockConfig: config,
             bundleID: "com.example.app", scrollThreshold: 6)
 
         #expect(context.peekEnabled == false)
@@ -97,7 +99,7 @@ struct TriggerContextTests {
             enabled: true, modifierFlags: CGEventFlags.maskAlternate.rawValue,
             monitorScope: .allMonitors)
         let context = TriggerContext.from(
-            dockConfig: config, peekEnabled: true, peekOpacity: 0.94, theme: OverlayTheme.default,
+            dockConfig: config,
             bundleID: "com.example.app", scrollThreshold: 6)
 
         #expect(context.monitorScope == MonitorScope.allMonitors)
