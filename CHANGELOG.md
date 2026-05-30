@@ -1,4 +1,10 @@
 # Changelog
+## 0.0.5 (2026-05-30)
+
+### Fixes
+
+- Fix cursor move overlay appearing before first scroll when `showOnPress` is disabled. Clear `lastCandidateCursor` on session end to prevent stale state leaking across trigger activations.
+
 ## 0.0.4 (2026-05-30)
 
 ### Features
