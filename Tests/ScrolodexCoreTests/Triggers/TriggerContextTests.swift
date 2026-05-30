@@ -102,4 +102,51 @@ struct TriggerContextTests {
 
         #expect(context.monitorScope == MonitorScope.allMonitors)
     }
+
+    private func makeGestureConfig(
+        scope: TriggerScope = .underCursor,
+        filter: TriggerFilter = .allApps,
+        overlayMode: OverlayPresentationMode = .tooltip,
+        peekEnabled: Bool = true,
+        peekOpacity: Double = 0.94,
+        theme: OverlayTheme = .dark,
+        monitorScope: MonitorScope = .currentMonitor,
+        invertDirection: Bool = false,
+        animate: Bool = true,
+        wrapAround: Bool = true
+    ) -> GestureTriggerConfig {
+        GestureTriggerConfig(
+            fingerCount: .three,
+            scope: scope, filter: filter,
+            overlayMode: overlayMode,
+            peekEnabled: peekEnabled, peekOpacity: peekOpacity,
+            theme: theme, monitorScope: monitorScope,
+            invertDirection: invertDirection,
+            animate: animate, wrapAround: wrapAround
+        )
+    }
+
+    @Test("from gesture config maps all fields")
+    func fromGestureConfigMapsAllFields() {
+        let config = makeGestureConfig(
+            scope: .currentScreen, filter: .sameApp,
+            overlayMode: .list, peekEnabled: false, peekOpacity: 0.5,
+            theme: .light, monitorScope: .allMonitors,
+            invertDirection: true, animate: false, wrapAround: false
+        )
+        let context = TriggerContext.from(gestureConfig: config, scrollThreshold: 8)
+
+        #expect(context.scope == .currentScreen)
+        #expect(context.filter == .sameApp)
+        #expect(context.overlayMode == .list)
+        #expect(context.peekEnabled == false)
+        #expect(context.peekOpacity == 0.5)
+        #expect(context.theme == .light)
+        #expect(context.monitorScope == .allMonitors)
+        #expect(context.invertDirection == true)
+        #expect(context.animate == false)
+        #expect(context.wrapAround == false)
+        #expect(context.scrollThreshold == 8)
+        #expect(context.dockBundleID == nil)
+    }
 }

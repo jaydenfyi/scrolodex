@@ -62,6 +62,25 @@ public struct TriggerContext: Equatable, Sendable {
 	}
 
 	public static func from(
+		gestureConfig: GestureTriggerConfig,
+		scrollThreshold: Double
+	) -> TriggerContext {
+		TriggerContext(
+			scope: gestureConfig.scope,
+			filter: gestureConfig.filter,
+			overlayMode: gestureConfig.overlayMode,
+			peekEnabled: gestureConfig.peekEnabled,
+			peekOpacity: gestureConfig.peekOpacity,
+			theme: gestureConfig.theme,
+			monitorScope: gestureConfig.monitorScope,
+			invertDirection: gestureConfig.invertDirection,
+			animate: gestureConfig.animate,
+			wrapAround: gestureConfig.wrapAround,
+			scrollThreshold: scrollThreshold
+		)
+	}
+
+	public static func from(
 		dockConfig: DockHoverConfiguration,
 		peekEnabled: Bool,
 		peekOpacity: Double,

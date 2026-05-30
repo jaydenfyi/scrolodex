@@ -157,19 +157,7 @@ import ScrolodexCore
 							if let resolvedDockAction {
 								dockHandler.handle(dockAction: resolvedDockAction)
 							} else {
-								let context = TriggerContext(
-									scope: captured.scope,
-									filter: captured.filter,
-									overlayMode: captured.overlayMode,
-									peekEnabled: captured.peekEnabled,
-									peekOpacity: captured.peekOpacity,
-									theme: captured.theme,
-									monitorScope: captured.monitorScope,
-									invertDirection: captured.invertDirection,
-									animate: captured.animate,
-									wrapAround: captured.wrapAround,
-									scrollThreshold: threshold
-								)
+								let context = TriggerContext.from(gestureConfig: captured, scrollThreshold: threshold)
 								coordinator.activate(context)
 							}
 						}
