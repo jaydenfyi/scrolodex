@@ -131,7 +131,7 @@ public final class NavigationCoordinator {
 		let now = CFAbsoluteTimeGetCurrent()
 		guard now - lastCursorMoveTime >= 1.0 / 60.0 else { return }
 		lastCursorMoveTime = now
-		guard context != nil else { return }
+		guard lastCandidateCursor != nil else { return }
 		if refreshCandidatesIfCursorRelocated(cursor: cursor) {
 			showSelection(transitionDirection: 0, cursor: cursor)
 		} else {
@@ -158,6 +158,7 @@ public final class NavigationCoordinator {
 			confirm()
 		case .none:
 			Log.debug("trigger released; no active selection to confirm")
+			lastCandidateCursor = nil
 			overlayController.hide()
 		}
 	}
@@ -173,6 +174,7 @@ public final class NavigationCoordinator {
 
 	public func cancel() {
 		guard session != nil else {
+			lastCandidateCursor = nil
 			overlayController.hide()
 			return
 		}
@@ -199,6 +201,7 @@ public final class NavigationCoordinator {
 	private func clearSession() {
 		session = nil
 		sessionCandidates = []
+		lastCandidateCursor = nil
 		overlayAnchorSession.reset()
 		overlayController.hide()
 	}
