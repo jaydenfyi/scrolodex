@@ -135,8 +135,8 @@ private extension StatusBarController {
 
 	func makeDesktopSpacesRow(dimmed: Bool = false) -> NSMenuItem {
 		let defaults = UserDefaults.standard
-		let enabled = defaults.object(forKey: SettingKey.DesktopSwitch.enabled) as? Bool ?? false
-		let rawFlags = defaults.object(forKey: SettingKey.DesktopSwitch.flags) as? Double
+		let enabled = defaults.object(forKey: "desktopSwitch.enabled") as? Bool ?? false
+		let rawFlags = defaults.object(forKey: "desktopSwitch.flags") as? Double
 			?? Double(HotkeyConfiguration.defaultDesktopSwitch.flags.rawValue)
 		let hotkey = HotkeyConfiguration(rawValue: UInt64(rawFlags))
 		let hotkeyText = enabled && rawFlags > 0 ? hotkey.compactDisplayName : nil
@@ -148,7 +148,7 @@ private extension StatusBarController {
 			isOn: enabled,
 			dimmed: dimmed,
 			onToggle: dimmed ? { _ in } : { newValue in
-				UserDefaults.standard.set(newValue, forKey: SettingKey.DesktopSwitch.enabled)
+				UserDefaults.standard.set(newValue, forKey: "desktopSwitch.enabled")
 			}
 		)
 		item.view = rowView

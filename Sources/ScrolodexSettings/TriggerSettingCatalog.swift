@@ -34,4 +34,12 @@ public enum TriggerSettingCatalog {
 			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue
 		),
 	]
+
+	public static let desktopEntries: [TriggerSettingCatalogEntry] = [
+		TriggerSettingCatalogEntry(
+			prefix: "desktopSwitch",
+			configuration: TriggerConfiguration(scope: .underCursor, filter: .allApps),
+			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskShift.rawValue
+		),
+	]
 }

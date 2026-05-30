@@ -10,19 +10,6 @@ public enum SettingKey {
 	public static let peekEnabled = "peek.enabled"
 	public static let peekOpacity = "peek.opacity"
 
-	public enum DesktopSwitch {
-		public static let enabled = "desktopSwitch.enabled"
-		public static let flags = "desktopSwitch.flags"
-		public static let invertDirection = "desktopSwitch.invertDirection"
-		public static let animate = "desktopSwitch.animate"
-		public static let wrapAround = "desktopSwitch.wrapAround"
-		public static let keyboardNavEnabled = "desktopSwitch.keyboardNav.enabled"
-		public static let keyboardNavForwardFlags = "desktopSwitch.keyboardNav.forwardFlags"
-		public static let keyboardNavForwardKeyCode = "desktopSwitch.keyboardNav.forwardKeyCode"
-		public static let keyboardNavBackwardFlags = "desktopSwitch.keyboardNav.backwardFlags"
-		public static let keyboardNavBackwardKeyCode = "desktopSwitch.keyboardNav.backwardKeyCode"
-	}
-
 	public static func registerDefaults(in defaults: UserDefaults = .standard) {
 		defaults.register(defaults: [
 			// Triggers
@@ -61,10 +48,10 @@ public enum SettingKey {
 			peekOpacity: SettingDefaults.peekOpacity,
 
 			// Desktop switch
-			DesktopSwitch.enabled: SettingDefaults.desktopSwitchEnabled,
-			DesktopSwitch.animate: SettingDefaults.desktopSwitchAnimate,
-			DesktopSwitch.wrapAround: SettingDefaults.desktopSwitchWrapAround,
-			DesktopSwitch.keyboardNavEnabled: SettingDefaults.desktopSwitchKeyboardNavEnabled,
+			"desktopSwitch.enabled": SettingDefaults.desktopSwitchEnabled,
+			"desktopSwitch.animate": SettingDefaults.desktopSwitchAnimate,
+			"desktopSwitch.wrapAround": SettingDefaults.desktopSwitchWrapAround,
+			"desktopSwitch.keyboardNav.enabled": SettingDefaults.desktopSwitchKeyboardNavEnabled,
 		])
 	}
 }

@@ -38,20 +38,20 @@ struct SettingsView: View {
 		prefix: "dockHover.allMonitors", defaultHotkey: .init(flags: .maskAlternate),
 		migrationPrefix: "dockHover")
 
-	@AppStorage(SettingKey.DesktopSwitch.enabled) private var desktopSwitchEnabled: Bool = SettingDefaults.desktopSwitchEnabled
-	@AppStorage(SettingKey.DesktopSwitch.flags) private var desktopSwitchFlags: Double = Double(
+	@AppStorage("desktopSwitch.enabled") private var desktopSwitchEnabled: Bool = SettingDefaults.desktopSwitchEnabled
+	@AppStorage("desktopSwitch.flags") private var desktopSwitchFlags: Double = Double(
 		HotkeyConfiguration.defaultDesktopSwitch.flags.rawValue)
-	@AppStorage(SettingKey.DesktopSwitch.invertDirection) private var desktopSwitchInvertDirection: Bool = false
-	@AppStorage(SettingKey.DesktopSwitch.animate) private var desktopSwitchAnimate: Bool = SettingDefaults.desktopSwitchAnimate
-	@AppStorage(SettingKey.DesktopSwitch.wrapAround) private var desktopSwitchWrapAround: Bool = SettingDefaults.desktopSwitchWrapAround
-	@AppStorage(SettingKey.DesktopSwitch.keyboardNavEnabled) private var desktopSwitchKbNavEnabled: Bool = SettingDefaults.desktopSwitchKeyboardNavEnabled
-	@AppStorage(SettingKey.DesktopSwitch.keyboardNavForwardFlags) private var desktopSwitchKbNavForwardFlags:
+	@AppStorage("desktopSwitch.invertDirection") private var desktopSwitchInvertDirection: Bool = false
+	@AppStorage("desktopSwitch.animate") private var desktopSwitchAnimate: Bool = SettingDefaults.desktopSwitchAnimate
+	@AppStorage("desktopSwitch.wrapAround") private var desktopSwitchWrapAround: Bool = SettingDefaults.desktopSwitchWrapAround
+	@AppStorage("desktopSwitch.keyboardNav.enabled") private var desktopSwitchKbNavEnabled: Bool = SettingDefaults.desktopSwitchKeyboardNavEnabled
+	@AppStorage("desktopSwitch.keyboardNav.forwardFlags") private var desktopSwitchKbNavForwardFlags:
 		Double = 0
-	@AppStorage(SettingKey.DesktopSwitch.keyboardNavForwardKeyCode) private var desktopSwitchKbNavForwardKeyCode:
+	@AppStorage("desktopSwitch.keyboardNav.forwardKeyCode") private var desktopSwitchKbNavForwardKeyCode:
 		Double = 0
-	@AppStorage(SettingKey.DesktopSwitch.keyboardNavBackwardFlags) private var desktopSwitchKbNavBackwardFlags:
+	@AppStorage("desktopSwitch.keyboardNav.backwardFlags") private var desktopSwitchKbNavBackwardFlags:
 		Double = 0
-	@AppStorage(SettingKey.DesktopSwitch.keyboardNavBackwardKeyCode) private var desktopSwitchKbNavBackwardKeyCode:
+	@AppStorage("desktopSwitch.keyboardNav.backwardKeyCode") private var desktopSwitchKbNavBackwardKeyCode:
 		Double = 0
 
 

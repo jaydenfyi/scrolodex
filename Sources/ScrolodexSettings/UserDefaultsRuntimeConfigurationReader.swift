@@ -77,19 +77,21 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 	}
 
 	private static func buildDesktopTriggers(defaults: UserDefaults) -> [DesktopSwitchTrigger] {
-		let enabled = defaults.bool(forKey: SettingKey.DesktopSwitch.enabled)
+		guard let entry = TriggerSettingCatalog.desktopEntries.first else { return [] }
+
+		let enabled = defaults.bool(forKey: "\(entry.prefix).enabled")
 		guard enabled else { return [] }
 
 		let rawFlags =
-			defaults.object(forKey: SettingKey.DesktopSwitch.flags) as? Double
-			?? Double(HotkeyConfiguration.defaultDesktopSwitch.flags.rawValue)
+			defaults.object(forKey: "\(entry.prefix).flags") as? Double
+			?? Double(entry.defaultModifierFlags)
 		let flags = CGEventFlags(rawValue: UInt64(rawFlags))
 		guard !flags.isEmpty else { return [] }
 
-		let invertDirection = defaults.bool(forKey: SettingKey.DesktopSwitch.invertDirection)
-		let animateScroll = defaults.object(forKey: SettingKey.DesktopSwitch.animate) as? Bool ?? SettingDefaults.desktopSwitchAnimate
-		let wrapAround = defaults.object(forKey: SettingKey.DesktopSwitch.wrapAround) as? Bool ?? SettingDefaults.desktopSwitchWrapAround
-		let keyboardNav = buildDesktopKeyboardNavigation(defaults: defaults)
+		let invertDirection = defaults.bool(forKey: "\(entry.prefix).invertDirection")
+		let animateScroll = defaults.object(forKey: "\(entry.prefix).animate") as? Bool ?? SettingDefaults.desktopSwitchAnimate
+		let wrapAround = defaults.object(forKey: "\(entry.prefix).wrapAround") as? Bool ?? SettingDefaults.desktopSwitchWrapAround
+		let keyboardNav = buildKeyboardNavigation(prefix: entry.prefix, defaults: defaults)
 
 		return [
 			DesktopSwitchTrigger(
@@ -131,13 +133,6 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 		let kbEnabled = defaults.bool(forKey: "\(prefix).keyboardNav.enabled")
 		let forward = buildKeyBinding(flagsKey: "\(prefix).keyboardNav.forwardFlags", keyCodeKey: "\(prefix).keyboardNav.forwardKeyCode", defaults: defaults)
 		let backward = buildKeyBinding(flagsKey: "\(prefix).keyboardNav.backwardFlags", keyCodeKey: "\(prefix).keyboardNav.backwardKeyCode", defaults: defaults)
-		return KeyboardNavigationBinding(enabled: kbEnabled, forward: forward, backward: backward)
-	}
-
-	private static func buildDesktopKeyboardNavigation(defaults: UserDefaults) -> KeyboardNavigationBinding {
-		let kbEnabled = defaults.bool(forKey: SettingKey.DesktopSwitch.keyboardNavEnabled)
-		let forward = buildKeyBinding(flagsKey: SettingKey.DesktopSwitch.keyboardNavForwardFlags, keyCodeKey: SettingKey.DesktopSwitch.keyboardNavForwardKeyCode, defaults: defaults)
-		let backward = buildKeyBinding(flagsKey: SettingKey.DesktopSwitch.keyboardNavBackwardFlags, keyCodeKey: SettingKey.DesktopSwitch.keyboardNavBackwardKeyCode, defaults: defaults)
 		return KeyboardNavigationBinding(enabled: kbEnabled, forward: forward, backward: backward)
 	}
 
