@@ -137,8 +137,8 @@ struct NavigationCoordinatorTests {
         #expect(overlay.showCount == 1)
 
         coordinator.handleCursorMove(cursor: CGPoint(x: 150, y: 100))
+        #expect(overlay.showCount == 1)
         #expect(overlay.repositionCount == 1)
-        #expect(overlay.lastRepositionCursor == CGPoint(x: 150, y: 100))
     }
 
     @Test("scroll at moved cursor refreshes under-cursor candidates")

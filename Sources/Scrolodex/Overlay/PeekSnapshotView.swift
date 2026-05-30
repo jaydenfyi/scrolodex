@@ -12,7 +12,7 @@ final class PeekSnapshotView: NSView {
 	var colorTokens: OverlayColorTokens = .tokens(for: .default)
 
 	@MainActor private enum Layout {
-		static let cornerRadius: CGFloat = 12
+		static let cornerRadius: CGFloat = 10
 		static let borderWidth: CGFloat = 3
 	}
 
