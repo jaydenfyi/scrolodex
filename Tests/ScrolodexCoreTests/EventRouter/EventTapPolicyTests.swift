@@ -10,10 +10,22 @@ struct EventTapPolicyTests {
         #expect(EventTapPolicy.action(for: .keyUp, triggerHeld: true, permissionsAvailable: true) == .passThrough)
     }
 
-    @Test("does not observe high-frequency mouse move events")
-    func doesNotObserveMouseMoved() {
-        #expect(EventTapPolicy.observedEventTypes.contains(.mouseMoved) == false)
-        #expect(EventTapPolicy.action(for: .mouseMoved, triggerHeld: true, permissionsAvailable: true) == .passThrough)
+    @Test("mouseMoved is observed and routes to handleCursorMove when trigger held")
+    func mouseMovedRoutesToHandleCursorMove() {
+        #expect(EventTapPolicy.observedEventTypes.contains(.mouseMoved) == true)
+        #expect(
+            EventTapPolicy.action(for: .mouseMoved, triggerHeld: true, permissionsAvailable: true)
+            == .handleCursorMove)
+        #expect(
+            EventTapPolicy.action(for: .mouseMoved, triggerHeld: false, permissionsAvailable: true)
+            == .passThrough)
+    }
+
+    @Test("mouseMoved passes through when permissions unavailable")
+    func mouseMovedPassesThroughWithoutPermissions() {
+        #expect(
+            EventTapPolicy.action(for: .mouseMoved, triggerHeld: true, permissionsAvailable: false)
+            == .passThrough)
     }
 
     @Test("consumes trigger scroll, passes through trigger click")

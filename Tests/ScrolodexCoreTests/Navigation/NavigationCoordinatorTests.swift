@@ -93,7 +93,7 @@ struct NavigationCoordinatorTests {
         let showCountBefore = overlay.showCount
 
         coordinator.handleCursorMove(cursor: CGPoint(x: 200, y: 200))
-        #expect(overlay.showCount == showCountBefore)
+        #expect(overlay.showCount == showCountBefore + 1)
     }
 
     @Test("cursor relocation ignored when distance below threshold")
@@ -111,7 +111,7 @@ struct NavigationCoordinatorTests {
         let showCountBefore = overlay.showCount
 
         coordinator.handleCursorMove(cursor: CGPoint(x: 120, y: 100))
-        #expect(overlay.showCount == showCountBefore)
+        #expect(overlay.showCount == showCountBefore + 1)
     }
 
     @Test("handleScroll starts session with 2+ candidates")

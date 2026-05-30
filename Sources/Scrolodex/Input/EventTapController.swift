@@ -179,6 +179,10 @@ final class EventTapController: @unchecked Sendable {
 			}
 		case .escapeCancel:
 			Task { @MainActor [coordinator] in coordinator.cancel() }
+		case .cursorMove(let cursor):
+			MainActor.assumeIsolated {
+				coordinator.handleCursorMove(cursor: cursor)
+			}
 		}
 	}
 

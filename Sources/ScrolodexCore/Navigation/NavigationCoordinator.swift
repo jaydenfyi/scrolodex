@@ -124,10 +124,15 @@ public final class NavigationCoordinator {
 		}
 	}
 
+	private var lastCursorMoveTime: CFAbsoluteTime = 0
+
 	public func handleCursorMove(cursor: CGPoint) {
-		if refreshCandidatesIfCursorRelocated(cursor: cursor) {
-			showSelection(transitionDirection: 0, cursor: cursor)
-		}
+		let now = CFAbsoluteTimeGetCurrent()
+		guard now - lastCursorMoveTime >= 1.0 / 60.0 else { return }
+		lastCursorMoveTime = now
+		guard session != nil else { return }
+		_ = refreshCandidatesIfCursorRelocated(cursor: cursor)
+		showSelection(transitionDirection: 0, cursor: cursor)
 	}
 
 	public func confirm() {

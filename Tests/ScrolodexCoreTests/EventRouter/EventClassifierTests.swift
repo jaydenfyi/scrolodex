@@ -323,6 +323,47 @@ struct EventClassifierTests {
 		#expect(action == .none)
 	}
 
+	@Test("mouseMoved with trigger held and active session returns cursorMove")
+	func mouseMovedWithActiveSession() {
+		let trigger = makeTrigger(flags: .maskControl)
+		let classifier = EventClassifier(triggers: [trigger], desktopTriggers: [])
+		var session = RouterSessionState(activeTrigger: trigger)
+		let event = RouterEvent(
+			type: .mouseMoved, flags: .maskControl, keyCode: 0,
+			cursorLocation: CGPoint(x: 200, y: 300))
+		let (directive, action) = classifier.classify(
+			event: event, dockHover: DockHoverInput(), session: &session)
+		#expect(directive == .consumeAndPassthrough)
+		if case .window(.cursorMove(let cursor)) = action {
+			#expect(cursor == CGPoint(x: 200, y: 300))
+		} else {
+			Issue.record("expected cursorMove, got \(action)")
+		}
+	}
+
+	@Test("mouseMoved without trigger held passes through")
+	func mouseMovedWithoutTriggerPassesThrough() {
+		let classifier = EventClassifier(triggers: [makeTrigger(flags: .maskControl)], desktopTriggers: [])
+		var session = RouterSessionState()
+		let event = RouterEvent(type: .mouseMoved, flags: [], keyCode: 0)
+		let (directive, action) = classifier.classify(
+			event: event, dockHover: DockHoverInput(), session: &session)
+		#expect(directive == .passThrough)
+		#expect(action == .none)
+	}
+
+	@Test("mouseMoved during active session does not mutate session state")
+	func mouseMovedDoesNotMutateSession() {
+		let trigger = makeTrigger(flags: .maskControl)
+		let classifier = EventClassifier(triggers: [trigger], desktopTriggers: [])
+		var session = RouterSessionState(activeTrigger: trigger)
+		let event = RouterEvent(
+			type: .mouseMoved, flags: .maskControl, keyCode: 0,
+			cursorLocation: CGPoint(x: 200, y: 300))
+		_ = classifier.classify(event: event, dockHover: DockHoverInput(), session: &session)
+		#expect(session.activeTrigger == trigger)
+	}
+
 	// MARK: - Desktop trigger routing
 
 	@Test("desktop trigger press activates desktop trigger")

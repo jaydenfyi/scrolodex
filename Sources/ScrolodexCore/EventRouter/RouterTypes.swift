@@ -65,6 +65,7 @@ public enum WindowAction: Equatable, Sendable {
 	case triggerReleased
 	case keyboardNavigate(direction: Int, trigger: TriggerHotkey?, cursor: CGPoint)
 	case escapeCancel
+	case cursorMove(CGPoint)
 }
 
 public enum DesktopAction: Equatable, Sendable {

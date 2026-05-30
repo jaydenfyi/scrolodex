@@ -7,6 +7,7 @@ public enum EventTapAction: Equatable, Sendable {
 	case previewTrigger
 	case handleTriggerRelease
 	case handleKeyNavigate(direction: Int)
+	case handleCursorMove
 	case reenableTap
 }
 
@@ -16,6 +17,7 @@ public enum EventTapPolicy {
 		.leftMouseDown,
 		.flagsChanged,
 		.keyDown,
+		.mouseMoved,
 		.tapDisabledByTimeout,
 		.tapDisabledByUserInput,
 	]
@@ -55,6 +57,8 @@ public enum EventTapPolicy {
 			return .handleScroll
 		case .leftMouseDown where triggerHeld:
 			return .handleClickConfirm
+		case .mouseMoved where triggerHeld:
+			return .handleCursorMove
 		case .flagsChanged where !triggerHeld:
 			return .handleTriggerRelease
 		default:

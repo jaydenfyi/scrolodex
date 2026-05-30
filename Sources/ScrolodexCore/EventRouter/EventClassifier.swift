@@ -280,6 +280,8 @@ public struct EventClassifier: Sendable {
 				session.beginWindowSession(trigger: trigger)
 			}
 			return (.consume, .window(.keyboardNavigate(direction: direction, trigger: session.activeTrigger, cursor: cursor)))
+		case .handleCursorMove:
+			return (.consumeAndPassthrough, .window(.cursorMove(event.cursorLocation)))
 		case .passThrough, .reenableTap:
 			return (.passThrough, .none)
 		}
