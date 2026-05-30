@@ -11,6 +11,7 @@ public protocol OverlayPresenting {
 		candidates: [WindowCandidate], selected: WindowCandidate?, at cursor: CGPoint, scope: TriggerScope,
 		transitionDirection: Int, preserveVisibleFrame: Bool, display: OverlayDisplayConfig)
 	func showDesktopSwitch(title: String, subtitle: String, selectedIndex: Int, totalCount: Int, at cursor: CGPoint, display: OverlayDisplayConfig)
+	func repositionOverlay(to cursor: CGPoint)
 	func hide()
 }
 

@@ -180,6 +180,8 @@ final class EventTapController: @unchecked Sendable {
 		case .escapeCancel:
 			Task { @MainActor [coordinator] in coordinator.cancel() }
 		case .cursorMove(let cursor):
+			// Synchronous: safe because CG event tap fires on main run loop.
+			// Avoids Task async-hop overhead at 120Hz mouse move frequency.
 			MainActor.assumeIsolated {
 				coordinator.handleCursorMove(cursor: cursor)
 			}

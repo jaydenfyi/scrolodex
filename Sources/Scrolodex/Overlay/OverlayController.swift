@@ -14,6 +14,10 @@ final class OverlayController: OverlayPresenting {
 	private let thumbnails = ThumbnailProvider()
 	private let appIcons = AppIconProvider()
 	private var initialPeekWindowID: CGWindowID?
+	private var smoothedCursor: CGPoint?
+	private var targetCursor: CGPoint?
+	private let smoothing: CGFloat = 0.45
+	private var convergenceTimer: DispatchSourceTimer?
 
 	func showStack(
 		candidates: [WindowCandidate], selected: WindowCandidate?, at cursor: CGPoint,
@@ -117,9 +121,87 @@ final class OverlayController: OverlayPresenting {
 		badgePanel?.orderOut(nil)
 		tilePanel?.orderOut(nil)
 		initialPeekWindowID = nil
+		smoothedCursor = nil
+		targetCursor = nil
+		stopConvergenceTimer()
 		thumbnails.clear()
 		appIcons.clear()
 		Log.debug("overlay hidden")
+	}
+
+	func repositionOverlay(to cursor: CGPoint) {
+		let mappings = screenMappings()
+		let appKitCursor = OverlayPlacement.appKitPoint(fromCGDisplayPoint: cursor, screens: mappings)
+		targetCursor = appKitCursor
+
+		guard let badgePanel, badgePanel.isVisible else { return }
+
+		if let current = smoothedCursor {
+			smoothedCursor = CGPoint(
+				x: current.x + (appKitCursor.x - current.x) * smoothing,
+				y: current.y + (appKitCursor.y - current.y) * smoothing)
+		} else {
+			smoothedCursor = appKitCursor
+		}
+		applySmoothedFrame(badgePanel: badgePanel)
+
+		if !isConverged {
+			ensureConvergenceTimer(badgePanel: badgePanel)
+		}
+	}
+
+	private func applySmoothedFrame(badgePanel: NSPanel) {
+		guard let smoothedCursor else { return }
+		let screenFrames = NSScreen.screens.map(\.frame)
+		let frame = CursorTooltipPlacement.frame(
+			size: badgeView.preferredSize(), cursor: smoothedCursor, screens: screenFrames)
+		badgePanel.setFrame(frame, display: false)
+	}
+
+	private var isConverged: Bool {
+		guard let smoothedCursor, let targetCursor else { return true }
+		return abs(smoothedCursor.x - targetCursor.x) < 0.5
+			&& abs(smoothedCursor.y - targetCursor.y) < 0.5
+	}
+
+	private func ensureConvergenceTimer(badgePanel: NSPanel) {
+		guard convergenceTimer == nil else { return }
+		let t = DispatchSource.makeTimerSource(queue: .main)
+		t.schedule(deadline: .now(), repeating: .milliseconds(16))
+		t.setEventHandler { [weak self] in
+			Task { @MainActor [weak self] in
+				self?.convergenceTick()
+			}
+		}
+		t.resume()
+		convergenceTimer = t
+	}
+
+	private func convergenceTick() {
+		guard let target = targetCursor, let current = smoothedCursor else {
+			stopConvergenceTimer()
+			return
+		}
+		smoothedCursor = CGPoint(
+			x: current.x + (target.x - current.x) * smoothing,
+			y: current.y + (target.y - current.y) * smoothing)
+
+		guard let badgePanel, badgePanel.isVisible else {
+			stopConvergenceTimer()
+			return
+		}
+		applySmoothedFrame(badgePanel: badgePanel)
+
+		if isConverged {
+			smoothedCursor = target
+			applySmoothedFrame(badgePanel: badgePanel)
+			stopConvergenceTimer()
+		}
+	}
+
+	private func stopConvergenceTimer() {
+		convergenceTimer?.cancel()
+		convergenceTimer = nil
 	}
 
 	func showDesktopSwitch(title: String, subtitle: String, selectedIndex: Int, totalCount: Int, at cursor: CGPoint, display: OverlayDisplayConfig)
@@ -193,6 +275,7 @@ final class OverlayController: OverlayPresenting {
 		let size = badgeView.preferredSize()
 		let mappings = screenMappings()
 		let appKitCursor = OverlayPlacement.appKitPoint(fromCGDisplayPoint: cursor, screens: mappings)
+		smoothedCursor = appKitCursor
 		let frame = CursorTooltipPlacement.frame(
 			size: size,
 			cursor: appKitCursor,

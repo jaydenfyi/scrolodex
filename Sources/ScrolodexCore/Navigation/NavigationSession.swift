@@ -41,12 +41,14 @@ public struct NavigationSession {
 		candidates[selectedIndex]
 	}
 
-	public init(candidates: [WindowCandidate], scrollThreshold: Double, wrapAround: Bool = true) {
+	public init(candidates: [WindowCandidate], scrollThreshold: Double, wrapAround: Bool = true, initialSelectedIndex: Int = 0) {
 		precondition(!candidates.isEmpty, "NavigationSession requires at least one candidate")
 		precondition(scrollThreshold > 0, "scrollThreshold must be positive")
+		precondition(initialSelectedIndex >= 0 && initialSelectedIndex < candidates.count, "initialSelectedIndex out of range")
 		self.candidates = candidates
 		self.scrollThreshold = scrollThreshold
 		self.wrapAround = wrapAround
+		self.selectedIndex = initialSelectedIndex
 	}
 
 	private func nextIndex(from index: Int, direction: Int) -> Int {

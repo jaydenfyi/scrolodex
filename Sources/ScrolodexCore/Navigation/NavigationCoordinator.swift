@@ -11,6 +11,7 @@ public final class NavigationCoordinator {
 	private var overlayAnchorSession = OverlayAnchorSession()
 	private var context: TriggerContext?
 	private var lastCandidateCursor: CGPoint = .zero
+	private var lastCursorMoveTime: CFAbsoluteTime = 0
 	private let cursorRelocationThreshold: CGFloat = 40
 
 	public init(
@@ -124,15 +125,16 @@ public final class NavigationCoordinator {
 		}
 	}
 
-	private var lastCursorMoveTime: CFAbsoluteTime = 0
-
 	public func handleCursorMove(cursor: CGPoint) {
 		let now = CFAbsoluteTimeGetCurrent()
 		guard now - lastCursorMoveTime >= 1.0 / 60.0 else { return }
 		lastCursorMoveTime = now
-		guard session != nil else { return }
-		_ = refreshCandidatesIfCursorRelocated(cursor: cursor)
-		showSelection(transitionDirection: 0, cursor: cursor)
+		guard context != nil else { return }
+		if session != nil, refreshCandidatesIfCursorRelocated(cursor: cursor) {
+			showSelection(transitionDirection: 0, cursor: cursor)
+		} else {
+			overlayController.repositionOverlay(to: cursor)
+		}
 	}
 
 	public func confirm() {
@@ -200,7 +202,7 @@ public final class NavigationCoordinator {
 	}
 
 	private func refreshCandidatesIfCursorRelocated(cursor: CGPoint) -> Bool {
-		guard let ctx = context, ctx.scope == .underCursor, session != nil else { return false }
+		guard let ctx = context, ctx.scope == .underCursor, let currentSession = session else { return false }
 		let dx = cursor.x - lastCandidateCursor.x
 		let dy = cursor.y - lastCandidateCursor.y
 		let distance = sqrt(dx * dx + dy * dy)
@@ -209,14 +211,29 @@ public final class NavigationCoordinator {
 		let candidates = collectCandidates(cursor: cursor)
 		guard candidates.count >= 2 else { return false }
 
+		let oldIDs = Set(sessionCandidates.map(\.cgWindowID))
+		let newIDs = Set(candidates.map(\.cgWindowID))
+
+		if oldIDs == newIDs {
+			lastCandidateCursor = cursor
+			Log.debug("cursor relocated distance=%.0f; same window set, skipping rebuild", distance)
+			return false
+		}
+
+		let previouslySelectedID = currentSession.selectedCandidate.cgWindowID
+		let restoredIndex = candidates.firstIndex(where: { $0.cgWindowID == previouslySelectedID })
+
 		sessionCandidates = candidates
 		session = NavigationSession(
 			candidates: candidates, scrollThreshold: ctx.scrollThreshold,
-			wrapAround: ctx.wrapAround)
+			wrapAround: ctx.wrapAround,
+			initialSelectedIndex: restoredIndex ?? 0)
 		lastCandidateCursor = cursor
 		overlayAnchorSession.reset()
 		_ = overlayAnchorSession.anchor(startingAt: cursor)
-		Log.debug("cursor relocated distance=%.0f; refreshed candidates=%d", distance, candidates.count)
+		Log.debug(
+			"cursor relocated distance=%.0f; refreshed candidates=%d restoredSelection=%d",
+			distance, candidates.count, restoredIndex ?? 0)
 		return true
 	}
 

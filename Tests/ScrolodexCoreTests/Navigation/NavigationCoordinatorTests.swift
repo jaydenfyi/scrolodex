@@ -55,6 +55,92 @@ struct NavigationCoordinatorTests {
         #expect(overlay.showCount == 2)
     }
 
+    @Test("cursor relocation preserves selection when window still present in new stack")
+    func cursorRelocationPreservesSelection() {
+        let setA = [
+            makeCandidate(id: 10, owner: "A1"),
+            makeCandidate(id: 11, owner: "A2")
+        ]
+        let setB = [
+            makeCandidate(id: 20, owner: "B1"),
+            makeCandidate(id: 11, owner: "A2")
+        ]
+        let provider = PositionalMockProvider(nearby: setA, far: setB)
+        let overlay = MockOverlayPresenter()
+        let raiser = MockWindowRaiser()
+        let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
+
+        coordinator.handleScroll(delta: -1, cursor: CGPoint(x: 100, y: 100))
+        for _ in 0..<6 {
+            coordinator.handleScroll(delta: -1, cursor: CGPoint(x: 100, y: 100))
+        }
+        #expect(overlay.lastSelected?.cgWindowID == 11)
+
+        coordinator.handleCursorMove(cursor: CGPoint(x: 150, y: 100))
+        #expect(overlay.lastSelected?.cgWindowID == 11)
+        #expect(overlay.lastCandidates?.map(\.cgWindowID) == [20, 11])
+    }
+
+    @Test("cursor relocation resets selection when window absent from new stack")
+    func cursorRelocationResetsSelectionWhenWindowAbsent() {
+        let setA = [
+            makeCandidate(id: 10, owner: "A1"),
+            makeCandidate(id: 11, owner: "A2")
+        ]
+        let setB = [
+            makeCandidate(id: 20, owner: "B1"),
+            makeCandidate(id: 21, owner: "B2")
+        ]
+        let provider = PositionalMockProvider(nearby: setA, far: setB)
+        let overlay = MockOverlayPresenter()
+        let raiser = MockWindowRaiser()
+        let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
+
+        coordinator.handleScroll(delta: -1, cursor: CGPoint(x: 100, y: 100))
+        for _ in 0..<6 {
+            coordinator.handleScroll(delta: -1, cursor: CGPoint(x: 100, y: 100))
+        }
+        #expect(overlay.lastSelected?.cgWindowID == 11)
+
+        coordinator.handleCursorMove(cursor: CGPoint(x: 150, y: 100))
+        #expect(overlay.lastSelected?.cgWindowID == 20)
+    }
+
+    @Test("cursor relocation skips rebuild when same window set")
+    func cursorRelocationSkipsRebuildForSameWindowSet() {
+        let setA = [
+            makeCandidate(id: 10, owner: "A1"),
+            makeCandidate(id: 11, owner: "A2")
+        ]
+        let provider = PositionalMockProvider(nearby: setA, far: setA)
+        let overlay = MockOverlayPresenter()
+        let raiser = MockWindowRaiser()
+        let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
+
+        coordinator.handleScroll(delta: -1, cursor: CGPoint(x: 100, y: 100))
+        let showCountBefore = overlay.showCount
+
+        coordinator.handleCursorMove(cursor: CGPoint(x: 150, y: 100))
+        #expect(overlay.showCount == showCountBefore)
+        #expect(overlay.repositionCount == 1)
+    }
+
+    @Test("cursor move repositions overlay even with single candidate")
+    func cursorMoveRepositionsWithSingleCandidate() {
+        let candidate = makeCandidate(id: 10, owner: "A1")
+        let provider = MockWindowStackProvider(candidates: [candidate])
+        let overlay = MockOverlayPresenter()
+        let raiser = MockWindowRaiser()
+        let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
+
+        coordinator.handleScroll(delta: -1, cursor: CGPoint(x: 100, y: 100))
+        #expect(overlay.showCount == 1)
+
+        coordinator.handleCursorMove(cursor: CGPoint(x: 150, y: 100))
+        #expect(overlay.repositionCount == 1)
+        #expect(overlay.lastRepositionCursor == CGPoint(x: 150, y: 100))
+    }
+
     @Test("scroll at moved cursor refreshes under-cursor candidates")
     func scrollAtMovedCursorRefreshesCandidates() {
         let setA = [
@@ -93,7 +179,9 @@ struct NavigationCoordinatorTests {
         let showCountBefore = overlay.showCount
 
         coordinator.handleCursorMove(cursor: CGPoint(x: 200, y: 200))
-        #expect(overlay.showCount == showCountBefore + 1)
+        #expect(overlay.showCount == showCountBefore)
+        #expect(overlay.repositionCount == 1)
+        #expect(overlay.lastRepositionCursor == CGPoint(x: 200, y: 200))
     }
 
     @Test("cursor relocation ignored when distance below threshold")
@@ -111,7 +199,9 @@ struct NavigationCoordinatorTests {
         let showCountBefore = overlay.showCount
 
         coordinator.handleCursorMove(cursor: CGPoint(x: 120, y: 100))
-        #expect(overlay.showCount == showCountBefore + 1)
+        #expect(overlay.showCount == showCountBefore)
+        #expect(overlay.repositionCount == 1)
+        #expect(overlay.lastRepositionCursor == CGPoint(x: 120, y: 100))
     }
 
     @Test("handleScroll starts session with 2+ candidates")
@@ -519,6 +609,14 @@ private final class MockOverlayPresenter: OverlayPresenting {
     }
 
     func showDesktopSwitch(title: String, subtitle: String, selectedIndex: Int, totalCount: Int, at cursor: CGPoint, display: OverlayDisplayConfig) {}
+
+    private(set) var repositionCount = 0
+    private(set) var lastRepositionCursor: CGPoint?
+
+    func repositionOverlay(to cursor: CGPoint) {
+        repositionCount += 1
+        lastRepositionCursor = cursor
+    }
 
     func hide() {
         hideCount += 1
