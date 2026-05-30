@@ -9,6 +9,9 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 	public let invertDirection: Bool
 	public let animate: Bool
 	public let wrapAround: Bool
+	public let peekEnabled: Bool
+	public let peekOpacity: Double
+	public let theme: OverlayTheme
 	public let keyboardNavigation: KeyboardNavigationBinding
 
 	public init(
@@ -20,6 +23,9 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 		invertDirection: Bool = SettingDefaults.invertDirection,
 		animate: Bool = SettingDefaults.animate,
 		wrapAround: Bool = SettingDefaults.wrapAround,
+		peekEnabled: Bool = SettingDefaults.peekEnabled,
+		peekOpacity: Double = SettingDefaults.peekOpacity,
+		theme: OverlayTheme = SettingDefaults.theme,
 		keyboardNavigation: KeyboardNavigationBinding = KeyboardNavigationBinding()
 	) {
 		self.enabled = enabled
@@ -30,6 +36,9 @@ public struct DockHoverConfiguration: Equatable, Sendable {
 		self.invertDirection = invertDirection
 		self.animate = animate
 		self.wrapAround = wrapAround
+		self.peekEnabled = peekEnabled
+		self.peekOpacity = peekOpacity
+		self.theme = theme
 		self.keyboardNavigation = keyboardNavigation
 	}
 

@@ -34,4 +34,26 @@ struct DockHoverConfigurationTests {
 		#expect(!config.animate)
 		#expect(!config.wrapAround)
 	}
+
+	@Test("carries appearance fields from construction")
+	func carriesAppearanceFields() {
+		let config = DockHoverConfiguration(
+			enabled: true,
+			modifierFlags: CGEventFlags.maskAlternate.rawValue,
+			peekEnabled: false,
+			peekOpacity: 0.5,
+			theme: .light
+		)
+		#expect(config.peekEnabled == false)
+		#expect(config.peekOpacity == 0.5)
+		#expect(config.theme == .light)
+	}
+
+	@Test("appearance fields default to setting defaults")
+	func appearanceDefaults() {
+		let config = DockHoverConfiguration()
+		#expect(config.peekEnabled == SettingDefaults.peekEnabled)
+		#expect(config.peekOpacity == SettingDefaults.peekOpacity)
+		#expect(config.theme == SettingDefaults.theme)
+	}
 }
