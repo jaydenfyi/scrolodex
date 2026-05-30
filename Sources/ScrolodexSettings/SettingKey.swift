@@ -11,47 +11,33 @@ public enum SettingKey {
 	public static let peekOpacity = "peek.opacity"
 
 	public static func registerDefaults(in defaults: UserDefaults = .standard) {
-		defaults.register(defaults: [
-			// Triggers
-			"trigger.underCursor.allApps.enabled": true,
-			"trigger.underCursor.allApps.keyboardNav.enabled": true,
-			"trigger.underCursor.allApps.keyboardNav.forwardFlags": 524288.0,
-			"trigger.underCursor.allApps.keyboardNav.forwardKeyCode": 50.0,
-			"trigger.underCursor.allApps.keyboardNav.backwardFlags": 655360.0,
-			"trigger.underCursor.allApps.keyboardNav.backwardKeyCode": 50.0,
+		var registrations: [String: Any] = [:]
 
-			"trigger.currentScreen.allApps.enabled": true,
-			"trigger.currentScreen.allApps.keyboardNav.enabled": true,
-			"trigger.currentScreen.allApps.keyboardNav.forwardFlags": 1572864.0,
-			"trigger.currentScreen.allApps.keyboardNav.forwardKeyCode": 50.0,
-			"trigger.currentScreen.allApps.keyboardNav.backwardFlags": 1703936.0,
-			"trigger.currentScreen.allApps.keyboardNav.backwardKeyCode": 50.0,
+		for entry in TriggerSettingCatalog.windowEntries + TriggerSettingCatalog.dockHoverEntries + TriggerSettingCatalog.desktopEntries {
+			registrations["\(entry.prefix).enabled"] = entry.enabled
+			if let kb = entry.keyboardNavDefaults {
+				registrations["\(entry.prefix).keyboardNav.enabled"] = kb.enabled
+				registrations["\(entry.prefix).keyboardNav.forwardFlags"] = kb.forwardFlags
+				registrations["\(entry.prefix).keyboardNav.forwardKeyCode"] = kb.forwardKeyCode
+				registrations["\(entry.prefix).keyboardNav.backwardFlags"] = kb.backwardFlags
+				registrations["\(entry.prefix).keyboardNav.backwardKeyCode"] = kb.backwardKeyCode
+			}
+		}
 
-			"trigger.underCursor.sameApp.enabled": false,
-			"trigger.currentScreen.sameApp.enabled": false,
+		registrations["trigger.underCursor.sameApp.enabled"] = false
+		registrations["trigger.currentScreen.sameApp.enabled"] = false
+		registrations["dockHover.currentMonitor.enabled"] = false
 
-			// Dock
-			"dockHover.currentMonitor.enabled": false,
-			"dockHover.allMonitors.enabled": true,
-			"dockHover.allMonitors.keyboardNav.enabled": true,
-			"dockHover.allMonitors.keyboardNav.forwardFlags": 524288.0,
-			"dockHover.allMonitors.keyboardNav.forwardKeyCode": 50.0,
-			"dockHover.allMonitors.keyboardNav.backwardFlags": 655360.0,
-			"dockHover.allMonitors.keyboardNav.backwardKeyCode": 50.0,
+		registrations["desktopSwitch.animate"] = SettingDefaults.desktopSwitchAnimate
+		registrations["desktopSwitch.wrapAround"] = SettingDefaults.desktopSwitchWrapAround
 
-			// Global visual & behavior
-			scrollSensitivity: SettingDefaults.scrollSensitivity,
-			theme: SettingDefaults.theme.rawValue,
-			animate: SettingDefaults.animate,
-			wrapAround: SettingDefaults.wrapAround,
-			peekEnabled: SettingDefaults.peekEnabled,
-			peekOpacity: SettingDefaults.peekOpacity,
+		registrations[scrollSensitivity] = SettingDefaults.scrollSensitivity
+		registrations[theme] = SettingDefaults.theme.rawValue
+		registrations[animate] = SettingDefaults.animate
+		registrations[wrapAround] = SettingDefaults.wrapAround
+		registrations[peekEnabled] = SettingDefaults.peekEnabled
+		registrations[peekOpacity] = SettingDefaults.peekOpacity
 
-			// Desktop switch
-			"desktopSwitch.enabled": SettingDefaults.desktopSwitchEnabled,
-			"desktopSwitch.animate": SettingDefaults.desktopSwitchAnimate,
-			"desktopSwitch.wrapAround": SettingDefaults.desktopSwitchWrapAround,
-			"desktopSwitch.keyboardNav.enabled": SettingDefaults.desktopSwitchKeyboardNavEnabled,
-		])
+		defaults.register(defaults: registrations)
 	}
 }

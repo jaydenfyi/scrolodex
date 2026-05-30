@@ -5,11 +5,31 @@ public struct TriggerSettingCatalogEntry: Equatable, Sendable {
 	public let prefix: String
 	public let configuration: TriggerConfiguration
 	public let defaultModifierFlags: UInt64
+	public let enabled: Bool
+	public let keyboardNavDefaults: KeyboardNavDefaults?
 
-	public init(prefix: String, configuration: TriggerConfiguration, defaultModifierFlags: UInt64) {
+	public struct KeyboardNavDefaults: Equatable, Sendable {
+		public let enabled: Bool
+		public let forwardFlags: Double
+		public let forwardKeyCode: Double
+		public let backwardFlags: Double
+		public let backwardKeyCode: Double
+
+		public init(enabled: Bool, forwardFlags: Double, forwardKeyCode: Double, backwardFlags: Double, backwardKeyCode: Double) {
+			self.enabled = enabled
+			self.forwardFlags = forwardFlags
+			self.forwardKeyCode = forwardKeyCode
+			self.backwardFlags = backwardFlags
+			self.backwardKeyCode = backwardKeyCode
+		}
+	}
+
+	public init(prefix: String, configuration: TriggerConfiguration, defaultModifierFlags: UInt64, enabled: Bool, keyboardNavDefaults: KeyboardNavDefaults? = nil) {
 		self.prefix = prefix
 		self.configuration = configuration
 		self.defaultModifierFlags = defaultModifierFlags
+		self.enabled = enabled
+		self.keyboardNavDefaults = keyboardNavDefaults
 	}
 }
 
@@ -18,12 +38,28 @@ public enum TriggerSettingCatalog {
 		TriggerSettingCatalogEntry(
 			prefix: "trigger.underCursor.allApps",
 			configuration: TriggerConfiguration(scope: .underCursor, filter: .allApps),
-			defaultModifierFlags: CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue
+			defaultModifierFlags: CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue,
+			enabled: true,
+			keyboardNavDefaults: .init(
+				enabled: true,
+				forwardFlags: 524288.0,
+				forwardKeyCode: 50.0,
+				backwardFlags: 655360.0,
+				backwardKeyCode: 50.0
+			)
 		),
 		TriggerSettingCatalogEntry(
 			prefix: "trigger.currentScreen.allApps",
 			configuration: TriggerConfiguration(scope: .currentScreen, filter: .allApps),
-			defaultModifierFlags: CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskControl.rawValue
+			defaultModifierFlags: CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskControl.rawValue,
+			enabled: true,
+			keyboardNavDefaults: .init(
+				enabled: true,
+				forwardFlags: 1572864.0,
+				forwardKeyCode: 50.0,
+				backwardFlags: 1703936.0,
+				backwardKeyCode: 50.0
+			)
 		),
 	]
 
@@ -31,7 +67,15 @@ public enum TriggerSettingCatalog {
 		TriggerSettingCatalogEntry(
 			prefix: "dockHover.allMonitors",
 			configuration: TriggerConfiguration(scope: .dockHover, filter: .allApps),
-			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue
+			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue,
+			enabled: true,
+			keyboardNavDefaults: .init(
+				enabled: true,
+				forwardFlags: 524288.0,
+				forwardKeyCode: 50.0,
+				backwardFlags: 655360.0,
+				backwardKeyCode: 50.0
+			)
 		),
 	]
 
@@ -39,7 +83,15 @@ public enum TriggerSettingCatalog {
 		TriggerSettingCatalogEntry(
 			prefix: "desktopSwitch",
 			configuration: TriggerConfiguration(scope: .underCursor, filter: .allApps),
-			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskShift.rawValue
+			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskShift.rawValue,
+			enabled: SettingDefaults.desktopSwitchEnabled,
+			keyboardNavDefaults: .init(
+				enabled: SettingDefaults.desktopSwitchKeyboardNavEnabled,
+				forwardFlags: 0,
+				forwardKeyCode: 0,
+				backwardFlags: 0,
+				backwardKeyCode: 0
+			)
 		),
 	]
 }

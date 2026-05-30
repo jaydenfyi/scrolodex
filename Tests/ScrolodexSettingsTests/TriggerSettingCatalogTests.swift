@@ -40,4 +40,30 @@ struct TriggerSettingCatalogTests {
 			#expect(entry.defaultModifierFlags != 0)
 		}
 	}
+
+	@Test("catalog entries carry enabled defaults")
+	func entriesCarryEnabledDefaults() {
+		#expect(TriggerSettingCatalog.windowEntries[0].enabled == true)
+		#expect(TriggerSettingCatalog.windowEntries[1].enabled == true)
+		#expect(TriggerSettingCatalog.dockHoverEntries[0].enabled == true)
+		#expect(TriggerSettingCatalog.desktopEntries[0].enabled == false)
+	}
+
+	@Test("window and dock entries have keyboard nav defaults")
+	func windowAndDockEntriesHaveKeyboardNavDefaults() throws {
+		for entry in TriggerSettingCatalog.windowEntries {
+			let kb = try #require(entry.keyboardNavDefaults)
+			#expect(kb.enabled == true)
+			#expect(kb.forwardKeyCode == 50.0)
+			#expect(kb.backwardKeyCode == 50.0)
+		}
+		let dock = try #require(TriggerSettingCatalog.dockHoverEntries[0].keyboardNavDefaults)
+		#expect(dock.enabled == true)
+	}
+
+	@Test("desktop entry has keyboard nav defaults with disabled binding")
+	func desktopEntryKeyboardNavDefaults() throws {
+		let kb = try #require(TriggerSettingCatalog.desktopEntries[0].keyboardNavDefaults)
+		#expect(kb.enabled == false)
+	}
 }
