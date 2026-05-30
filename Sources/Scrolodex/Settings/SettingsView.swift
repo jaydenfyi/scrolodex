@@ -26,16 +26,18 @@ struct SettingsView: View {
 	@AppStorage(SettingKey.disabled) private var globallyDisabled: Bool = false
 
 	@State private var trigger1 = TriggerSettingsStore(
-		prefix: "trigger.underCursor.allApps", defaultHotkey: .defaultScrollAtPoint)
+		entry: TriggerSettingCatalog.windowEntries[0], defaultHotkey: .defaultScrollAtPoint)
 	@State private var trigger2 = TriggerSettingsStore(
-		prefix: "trigger.currentScreen.allApps", defaultHotkey: .defaultScrollAllWindows)
-	@State private var trigger3 = TriggerSettingsStore(prefix: "trigger.underCursor.sameApp")
-	@State private var trigger4 = TriggerSettingsStore(prefix: "trigger.currentScreen.sameApp")
+		entry: TriggerSettingCatalog.windowEntries[1], defaultHotkey: .defaultScrollAllWindows)
+	@State private var trigger3 = TriggerSettingsStore(
+		entry: TriggerSettingCatalog.featureFlaggedEntries[0])
+	@State private var trigger4 = TriggerSettingsStore(
+		entry: TriggerSettingCatalog.featureFlaggedEntries[1])
 
 	@State private var dockHoverCurrent = TriggerSettingsStore(
-		prefix: "dockHover.currentMonitor", defaultHotkey: .init(flags: .maskAlternate))
+		entry: TriggerSettingCatalog.featureFlaggedEntries[2], defaultHotkey: .init(flags: .maskAlternate))
 	@State private var dockHoverAll = TriggerSettingsStore(
-		prefix: "dockHover.allMonitors", defaultHotkey: .init(flags: .maskAlternate),
+		entry: TriggerSettingCatalog.dockHoverEntries[0], defaultHotkey: .init(flags: .maskAlternate),
 		migrationPrefix: "dockHover")
 
 	@AppStorage("desktopSwitch.enabled") private var desktopSwitchEnabled: Bool = SettingDefaults.desktopSwitchEnabled

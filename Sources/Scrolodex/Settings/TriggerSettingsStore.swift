@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import ScrolodexCore
+import ScrolodexSettings
 import SwiftUI
 
 @MainActor @Observable
@@ -95,6 +96,14 @@ final class TriggerSettingsStore {
 
 	convenience init(prefix: String, defaultHotkey: HotkeyConfiguration, migrationPrefix: String? = nil) {
 		self.init(prefix: prefix, defaultFlags: Double(defaultHotkey.flags.rawValue), migrationPrefix: migrationPrefix)
+	}
+
+	convenience init(entry: TriggerSettingCatalogEntry, defaultHotkey: HotkeyConfiguration, migrationPrefix: String? = nil) {
+		self.init(prefix: entry.prefix, defaultFlags: Double(defaultHotkey.flags.rawValue), migrationPrefix: migrationPrefix)
+	}
+
+	convenience init(entry: TriggerSettingCatalogEntry, migrationPrefix: String? = nil) {
+		self.init(prefix: entry.prefix, defaultFlags: Double(entry.defaultModifierFlags), migrationPrefix: migrationPrefix)
 	}
 
 	deinit {

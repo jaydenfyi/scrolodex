@@ -51,19 +51,16 @@ final class StatusBarController: NSObject {
 
 		menu.addItem(makeSectionHeader("Triggers"))
 
-		let triggerEntries: [(name: String, prefix: String, defaultFlags: Double)] = [
-			("Under Cursor", "trigger.underCursor.allApps", Double(CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue)),
-			("All Windows", "trigger.currentScreen.allApps", Double(CGEventFlags.maskCommand.rawValue | CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskControl.rawValue)),
-			// Feature flag: same-app triggers hidden
-			// ("App Under Cursor", "trigger.underCursor.sameApp", 0),
-			// ("App On Screen", "trigger.currentScreen.sameApp", 0),
-			// Feature flag: dock simplified to single option
-			// ("Dock Windows", "dockHover.currentMonitor", Double(CGEventFlags.maskAlternate.rawValue)),
-			("Dock Windows", "dockHover.allMonitors", Double(CGEventFlags.maskAlternate.rawValue)),
+		let displayNames: [String: String] = [
+			"trigger.underCursor.allApps": "Under Cursor",
+			"trigger.currentScreen.allApps": "All Windows",
+			"dockHover.allMonitors": "Dock Windows",
 		]
+		let catalogEntries = TriggerSettingCatalog.windowEntries + TriggerSettingCatalog.dockHoverEntries
 
-		for entry in triggerEntries {
-			menu.addItem(makeTriggerRow(name: entry.name, prefix: entry.prefix, defaultFlags: entry.defaultFlags, dimmed: globallyDisabled))
+		for entry in catalogEntries {
+			guard let name = displayNames[entry.prefix] else { continue }
+			menu.addItem(makeTriggerRow(name: name, entry: entry, dimmed: globallyDisabled))
 		}
 
 		menu.addItem(makeDesktopSpacesRow(dimmed: globallyDisabled))
@@ -111,10 +108,11 @@ private extension StatusBarController {
 		return item
 	}
 
-	func makeTriggerRow(name: String, prefix: String, defaultFlags: Double, dimmed: Bool = false) -> NSMenuItem {
+	func makeTriggerRow(name: String, entry: TriggerSettingCatalogEntry, dimmed: Bool = false) -> NSMenuItem {
 		let defaults = UserDefaults.standard
-		let enabled = defaults.object(forKey: "\(prefix).enabled") as? Bool ?? (defaultFlags > 0)
-		let rawFlags = defaults.double(forKey: "\(prefix).flags")
+		let defaultFlags = Double(entry.defaultModifierFlags)
+		let enabled = defaults.object(forKey: "\(entry.prefix).enabled") as? Bool ?? (defaultFlags > 0)
+		let rawFlags = defaults.double(forKey: "\(entry.prefix).flags")
 		let effectiveFlags = rawFlags > 0 ? rawFlags : defaultFlags
 		let hotkey = HotkeyConfiguration(rawValue: UInt64(effectiveFlags))
 		let hotkeyText = enabled && effectiveFlags > 0 ? hotkey.compactDisplayName : nil
@@ -126,7 +124,7 @@ private extension StatusBarController {
 			isOn: enabled,
 			dimmed: dimmed,
 			onToggle: dimmed ? { _ in } : { newValue in
-				UserDefaults.standard.set(newValue, forKey: "\(prefix).enabled")
+				UserDefaults.standard.set(newValue, forKey: "\(entry.prefix).enabled")
 			}
 		)
 		item.view = rowView

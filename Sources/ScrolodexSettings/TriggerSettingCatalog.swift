@@ -79,6 +79,27 @@ public enum TriggerSettingCatalog {
 		),
 	]
 
+	public static let featureFlaggedEntries: [TriggerSettingCatalogEntry] = [
+		TriggerSettingCatalogEntry(
+			prefix: "trigger.underCursor.sameApp",
+			configuration: TriggerConfiguration(scope: .underCursor, filter: .sameApp),
+			defaultModifierFlags: 0,
+			enabled: false
+		),
+		TriggerSettingCatalogEntry(
+			prefix: "trigger.currentScreen.sameApp",
+			configuration: TriggerConfiguration(scope: .currentScreen, filter: .sameApp),
+			defaultModifierFlags: 0,
+			enabled: false
+		),
+		TriggerSettingCatalogEntry(
+			prefix: "dockHover.currentMonitor",
+			configuration: TriggerConfiguration(scope: .dockHover, filter: .allApps),
+			defaultModifierFlags: CGEventFlags.maskAlternate.rawValue,
+			enabled: false
+		),
+	]
+
 	public static let desktopEntries: [TriggerSettingCatalogEntry] = [
 		TriggerSettingCatalogEntry(
 			prefix: "desktopSwitch",

@@ -13,7 +13,9 @@ public enum SettingKey {
 	public static func registerDefaults(in defaults: UserDefaults = .standard) {
 		var registrations: [String: Any] = [:]
 
-		for entry in TriggerSettingCatalog.windowEntries + TriggerSettingCatalog.dockHoverEntries + TriggerSettingCatalog.desktopEntries {
+		for entry in TriggerSettingCatalog.windowEntries + TriggerSettingCatalog.dockHoverEntries
+			+ TriggerSettingCatalog.desktopEntries + TriggerSettingCatalog.featureFlaggedEntries
+		{
 			registrations["\(entry.prefix).enabled"] = entry.enabled
 			if let kb = entry.keyboardNavDefaults {
 				registrations["\(entry.prefix).keyboardNav.enabled"] = kb.enabled
@@ -23,10 +25,6 @@ public enum SettingKey {
 				registrations["\(entry.prefix).keyboardNav.backwardKeyCode"] = kb.backwardKeyCode
 			}
 		}
-
-		registrations["trigger.underCursor.sameApp.enabled"] = false
-		registrations["trigger.currentScreen.sameApp.enabled"] = false
-		registrations["dockHover.currentMonitor.enabled"] = false
 
 		registrations["desktopSwitch.animate"] = SettingDefaults.desktopSwitchAnimate
 		registrations["desktopSwitch.wrapAround"] = SettingDefaults.desktopSwitchWrapAround

@@ -66,4 +66,22 @@ struct TriggerSettingCatalogTests {
 		let kb = try #require(TriggerSettingCatalog.desktopEntries[0].keyboardNavDefaults)
 		#expect(kb.enabled == false)
 	}
+
+	@Test("feature-flagged entries are all disabled with no keyboard nav")
+	func featureFlaggedEntriesDisabled() {
+		#expect(TriggerSettingCatalog.featureFlaggedEntries.count == 3)
+		for entry in TriggerSettingCatalog.featureFlaggedEntries {
+			#expect(entry.enabled == false)
+			#expect(entry.keyboardNavDefaults == nil)
+		}
+	}
+
+	@Test("feature-flagged entries have expected prefixes")
+	func featureFlaggedPrefixes() {
+		#expect(TriggerSettingCatalog.featureFlaggedEntries.map(\.prefix) == [
+			"trigger.underCursor.sameApp",
+			"trigger.currentScreen.sameApp",
+			"dockHover.currentMonitor",
+		])
+	}
 }
