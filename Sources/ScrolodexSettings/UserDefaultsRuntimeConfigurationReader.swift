@@ -26,37 +26,25 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 
 	private static func buildTriggers(defaults: UserDefaults, appearance: RuntimeAppearanceSettings) -> [TriggerHotkey] {
 		TriggerSettingCatalog.windowEntries.compactMap { entry in
-			let enabled = defaults.bool(forKey: "\(entry.prefix).enabled")
-			guard enabled else { return nil }
+			guard defaults.bool(forKey: "\(entry.prefix).enabled") else { return nil }
 
 			let rawFlags = defaults.double(forKey: "\(entry.prefix).flags")
 			let resolvedRaw = rawFlags > 0 ? UInt64(rawFlags) : entry.defaultModifierFlags
 			let flags = CGEventFlags(rawValue: resolvedRaw)
-
-			let overlayRaw =
-				defaults.string(forKey: "\(entry.prefix).overlay")
-				?? SettingDefaults.overlayMode.rawValue
-			let overlayMode = OverlayPresentationMode(rawValue: overlayRaw) ?? SettingDefaults.overlayMode
-			let monitorScopeRaw =
-				defaults.string(forKey: "\(entry.prefix).monitorScope")
-				?? SettingDefaults.monitorScope.rawValue
-			let monitorScope = MonitorScope(rawValue: monitorScopeRaw) ?? SettingDefaults.monitorScope
-
+			let settings = PerTriggerSettings.read(prefix: entry.prefix, defaults: defaults)
 			let keyboardNav = buildKeyboardNavigation(prefix: entry.prefix, defaults: defaults)
-
 			let showOnPress = defaults.object(forKey: "\(entry.prefix).showOnPress") as? Bool ?? SettingDefaults.showOnPress
-			let invertDirection = defaults.bool(forKey: "\(entry.prefix).invertDirection")
 
 			return TriggerHotkey(
 				configuration: entry.configuration,
 				hotkey: HotkeyConfiguration(flags: flags),
-				overlayMode: overlayMode,
+				overlayMode: settings.overlayMode,
 				peekEnabled: appearance.peekEnabled,
 				peekOpacity: appearance.peekOpacity,
 				theme: appearance.theme,
-				monitorScope: monitorScope,
+				monitorScope: settings.monitorScope,
 				showOnPress: showOnPress,
-				invertDirection: invertDirection,
+				invertDirection: settings.invertDirection,
 				animate: appearance.animate,
 				wrapAround: appearance.wrapAround,
 				keyboardNavigation: keyboardNav
@@ -66,32 +54,22 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 
 	private static func buildGestureConfigs(defaults: UserDefaults, appearance: RuntimeAppearanceSettings) -> [GestureTriggerConfig] {
 		TriggerSettingCatalog.windowEntries.compactMap { entry in
-			let enabled = defaults.bool(forKey: "\(entry.prefix).enabled")
-			guard enabled else { return nil }
+			guard defaults.bool(forKey: "\(entry.prefix).enabled") else { return nil }
 
 			let rawFingerCount = defaults.integer(forKey: "\(entry.prefix).gesture")
 			guard let fingerCount = TrackpadFingerCount(rawValue: rawFingerCount) else { return nil }
-
-			let overlayRaw =
-				defaults.string(forKey: "\(entry.prefix).overlay")
-				?? OverlayPresentationMode.default.rawValue
-			let overlayMode = OverlayPresentationMode(rawValue: overlayRaw) ?? .default
-			let monitorScopeRaw =
-				defaults.string(forKey: "\(entry.prefix).monitorScope")
-				?? MonitorScope.currentMonitor.rawValue
-			let monitorScope = MonitorScope(rawValue: monitorScopeRaw) ?? .currentMonitor
-			let invertDirection = defaults.bool(forKey: "\(entry.prefix).invertDirection")
+			let settings = PerTriggerSettings.read(prefix: entry.prefix, defaults: defaults)
 
 			return GestureTriggerConfig(
 				fingerCount: fingerCount,
 				scope: entry.configuration.scope,
 				filter: entry.configuration.filter,
-				overlayMode: overlayMode,
+				overlayMode: settings.overlayMode,
 				peekEnabled: appearance.peekEnabled,
 				peekOpacity: appearance.peekOpacity,
 				theme: appearance.theme,
-				monitorScope: monitorScope,
-				invertDirection: invertDirection,
+				monitorScope: settings.monitorScope,
+				invertDirection: settings.invertDirection,
 				animate: appearance.animate,
 				wrapAround: appearance.wrapAround
 			)
@@ -131,72 +109,39 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 			let enabled = defaults.bool(forKey: "\(entry.prefix).enabled")
 			let rawFlags = defaults.double(forKey: "\(entry.prefix).flags")
 			let modifierFlags = rawFlags > 0 ? UInt64(rawFlags) : entry.defaultModifierFlags
-			let monitorScopeRaw = defaults.string(forKey: "\(entry.prefix).monitorScope") ?? MonitorScope.allMonitors.rawValue
-			let overlayRaw = defaults.string(forKey: "\(entry.prefix).overlay") ?? SettingDefaults.overlayMode.rawValue
-			let kbNavEnabled = defaults.object(forKey: "\(entry.prefix).keyboardNav.enabled") as? Bool ?? false
-			let kbForwardFlags = defaults.double(forKey: "\(entry.prefix).keyboardNav.forwardFlags")
-			let kbForwardKeyCode = defaults.double(forKey: "\(entry.prefix).keyboardNav.forwardKeyCode")
-			let kbBackwardFlags = defaults.double(forKey: "\(entry.prefix).keyboardNav.backwardFlags")
-			let kbBackwardKeyCode = defaults.double(forKey: "\(entry.prefix).keyboardNav.backwardKeyCode")
+			let settings = PerTriggerSettings.read(prefix: entry.prefix, defaults: defaults)
+			let keyboardNav = buildKeyboardNavigation(prefix: entry.prefix, defaults: defaults)
+			let showOnPress = defaults.object(forKey: "\(entry.prefix).showOnPress") as? Bool ?? SettingDefaults.showOnPress
 
 			return DockHoverConfiguration(
 				enabled: enabled,
 				modifierFlags: modifierFlags,
-				monitorScope: MonitorScope(rawValue: monitorScopeRaw) ?? .allMonitors,
-				overlayMode: OverlayPresentationMode(rawValue: overlayRaw) ?? .default,
-				showOnPress: defaults.object(forKey: "\(entry.prefix).showOnPress") as? Bool ?? SettingDefaults.showOnPress,
-				invertDirection: defaults.object(forKey: "\(entry.prefix).invertDirection") as? Bool ?? SettingDefaults.invertDirection,
+				monitorScope: settings.monitorScope,
+				overlayMode: settings.overlayMode,
+				showOnPress: showOnPress,
+				invertDirection: settings.invertDirection,
 				animate: appearance.animate,
 				wrapAround: appearance.wrapAround,
-				keyboardNavigation: KeyboardNavigationBinding(
-					enabled: kbNavEnabled,
-					forward: kbForwardFlags > 0
-						? KeyboardHotkeyConfiguration(
-							flags: CGEventFlags(rawValue: UInt64(kbForwardFlags)),
-							keyCode: CGKeyCode(kbForwardKeyCode))
-						: nil,
-					backward: kbBackwardFlags > 0
-						? KeyboardHotkeyConfiguration(
-							flags: CGEventFlags(rawValue: UInt64(kbBackwardFlags)),
-							keyCode: CGKeyCode(kbBackwardKeyCode))
-						: nil
-				)
+				keyboardNavigation: keyboardNav
 			)
 		}
 	}
 
 	private static func buildKeyboardNavigation(prefix: String, defaults: UserDefaults) -> KeyboardNavigationBinding {
 		let kbEnabled = defaults.bool(forKey: "\(prefix).keyboardNav.enabled")
-		let forward = buildKeyBinding(prefix: prefix, direction: "forward", defaults: defaults)
-		let backward = buildKeyBinding(prefix: prefix, direction: "backward", defaults: defaults)
+		let forward = buildKeyBinding(flagsKey: "\(prefix).keyboardNav.forwardFlags", keyCodeKey: "\(prefix).keyboardNav.forwardKeyCode", defaults: defaults)
+		let backward = buildKeyBinding(flagsKey: "\(prefix).keyboardNav.backwardFlags", keyCodeKey: "\(prefix).keyboardNav.backwardKeyCode", defaults: defaults)
 		return KeyboardNavigationBinding(enabled: kbEnabled, forward: forward, backward: backward)
-	}
-
-	private static func buildKeyBinding(prefix: String, direction: String, defaults: UserDefaults) -> KeyboardHotkeyConfiguration? {
-		let rawFlags = defaults.double(forKey: "\(prefix).keyboardNav.\(direction)Flags")
-		let rawKeyCode = defaults.double(forKey: "\(prefix).keyboardNav.\(direction)KeyCode")
-		let flags = CGEventFlags(rawValue: UInt64(rawFlags))
-		let keyCode = CGKeyCode(rawKeyCode)
-		guard keyCode != 0 else { return nil }
-		return KeyboardHotkeyConfiguration(flags: flags, keyCode: keyCode)
 	}
 
 	private static func buildDesktopKeyboardNavigation(defaults: UserDefaults) -> KeyboardNavigationBinding {
 		let kbEnabled = defaults.bool(forKey: SettingKey.DesktopSwitch.keyboardNavEnabled)
-		let forward = buildDesktopKeyBinding(direction: "forward", defaults: defaults)
-		let backward = buildDesktopKeyBinding(direction: "backward", defaults: defaults)
+		let forward = buildKeyBinding(flagsKey: SettingKey.DesktopSwitch.keyboardNavForwardFlags, keyCodeKey: SettingKey.DesktopSwitch.keyboardNavForwardKeyCode, defaults: defaults)
+		let backward = buildKeyBinding(flagsKey: SettingKey.DesktopSwitch.keyboardNavBackwardFlags, keyCodeKey: SettingKey.DesktopSwitch.keyboardNavBackwardKeyCode, defaults: defaults)
 		return KeyboardNavigationBinding(enabled: kbEnabled, forward: forward, backward: backward)
 	}
 
-	private static func buildDesktopKeyBinding(direction: String, defaults: UserDefaults) -> KeyboardHotkeyConfiguration? {
-		let flagsKey =
-			direction == "forward"
-			? SettingKey.DesktopSwitch.keyboardNavForwardFlags
-			: SettingKey.DesktopSwitch.keyboardNavBackwardFlags
-		let keyCodeKey =
-			direction == "forward"
-			? SettingKey.DesktopSwitch.keyboardNavForwardKeyCode
-			: SettingKey.DesktopSwitch.keyboardNavBackwardKeyCode
+	private static func buildKeyBinding(flagsKey: String, keyCodeKey: String, defaults: UserDefaults) -> KeyboardHotkeyConfiguration? {
 		let rawFlags = defaults.double(forKey: flagsKey)
 		let rawKeyCode = defaults.double(forKey: keyCodeKey)
 		let flags = CGEventFlags(rawValue: UInt64(rawFlags))
@@ -220,5 +165,25 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 				defaults.set(val, forKey: "\(new).\(pair.new)")
 			}
 		}
+	}
+}
+
+private struct PerTriggerSettings: Sendable {
+	let overlayMode: OverlayPresentationMode
+	let monitorScope: MonitorScope
+	let invertDirection: Bool
+
+	static func read(prefix: String, defaults: UserDefaults) -> PerTriggerSettings {
+		PerTriggerSettings(
+			overlayMode: OverlayPresentationMode(
+				rawValue: defaults.string(forKey: "\(prefix).overlay")
+					?? SettingDefaults.overlayMode.rawValue
+			) ?? SettingDefaults.overlayMode,
+			monitorScope: MonitorScope(
+				rawValue: defaults.string(forKey: "\(prefix).monitorScope")
+					?? SettingDefaults.monitorScope.rawValue
+			) ?? SettingDefaults.monitorScope,
+			invertDirection: defaults.bool(forKey: "\(prefix).invertDirection")
+		)
 	}
 }
