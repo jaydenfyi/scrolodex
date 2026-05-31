@@ -180,12 +180,10 @@ public final class NavigationCoordinator {
 	}
 
 	public func handleDesktopCursorMove(cursor: CGPoint) {
-		Log.debug("desktop coordinator cursorMove cursor=%@", NSStringFromPoint(cursor))
 		overlayController.repositionOverlay(to: cursor)
 	}
 
 	public func handleDesktopTriggerRelease() {
-		Log.debug("desktop coordinator release")
 		overlayController.hide()
 	}
 

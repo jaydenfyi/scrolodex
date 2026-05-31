@@ -134,10 +134,7 @@ final class OverlayController: OverlayPresenting {
 		let appKitCursor = OverlayPlacement.appKitPoint(fromCGDisplayPoint: cursor, screens: mappings)
 		targetCursor = appKitCursor
 
-		guard let badgePanel else {
-			Log.debug("overlay reposition skipped; no badge cursor=%@ appKit=%@", NSStringFromPoint(cursor), NSStringFromPoint(appKitCursor))
-			return
-		}
+		guard let badgePanel else { return }
 
 		if let current = smoothedCursor {
 			smoothedCursor = CGPoint(
@@ -147,10 +144,6 @@ final class OverlayController: OverlayPresenting {
 			smoothedCursor = appKitCursor
 		}
 		applySmoothedFrame(badgePanel: badgePanel)
-		Log.debug(
-			"overlay reposition cursor=%@ appKit=%@ smoothed=%@ visible=%@ ordered=%@ frame=%@",
-			NSStringFromPoint(cursor), NSStringFromPoint(appKitCursor), NSStringFromPoint(smoothedCursor ?? .zero),
-			String(badgePanel.isVisible), String(badgePanel.isMiniaturized == false), NSStringFromRect(badgePanel.frame))
 
 		if !isConverged {
 			ensureConvergenceTimer(badgePanel: badgePanel)
@@ -364,9 +357,6 @@ final class OverlayController: OverlayPresenting {
 			primaryScreenHeight: primaryHeight,
 			mouseLocation: mouseLocation
 		)
-		Log.debug(
-			"convert cgBounds=%@ mouse=%@ appKitFrame=%@", NSStringFromRect(cgBounds),
-			NSStringFromPoint(mouseLocation), NSStringFromRect(converted))
 		return converted
 	}
 

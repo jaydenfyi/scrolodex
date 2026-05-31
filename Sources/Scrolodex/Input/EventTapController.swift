@@ -104,19 +104,11 @@ final class EventTapController: @unchecked Sendable {
 
 		let dockHoverInput = buildDockHoverInput(event: event)
 
-		let desktopActiveBefore = session.activeDesktopTrigger != nil
 		let (directive, action) = classifier.classify(
 			event: routerEvent,
 			dockHover: dockHoverInput,
 			session: &session
 		)
-		logDesktopTrace(
-			type: type,
-			event: routerEvent,
-			directive: directive,
-			action: action,
-			desktopActiveBefore: desktopActiveBefore,
-			desktopActiveAfter: session.activeDesktopTrigger != nil)
 
 		switch directive {
 		case .passThrough:
@@ -226,30 +218,6 @@ final class EventTapController: @unchecked Sendable {
 		}
 	}
 
-	private func logDesktopTrace(
-		type: CGEventType,
-		event: RouterEvent,
-		directive: RouterDirective,
-		action: RouterAction,
-		desktopActiveBefore: Bool,
-		desktopActiveAfter: Bool
-	) {
-		guard Log.debugEnabled else { return }
-		let isDesktopAction: Bool
-		if case .desktop = action {
-			isDesktopAction = true
-		} else {
-			isDesktopAction = false
-		}
-		guard desktopActiveBefore || desktopActiveAfter || isDesktopAction || classifier.desktopTriggers.contains(where: { $0.matches(event.flags) })
-		else { return }
-
-		Log.debug(
-			"desktop trace type=%@ flags=%llu cursor=%@ directive=%@ action=%@ activeBefore=%@ activeAfter=%@",
-			eventTypeName(type), event.flags.rawValue, NSStringFromPoint(event.cursorLocation), String(describing: directive),
-			String(describing: action), String(describing: desktopActiveBefore), String(describing: desktopActiveAfter))
-	}
-
 	private func buildDockHoverInput(event: CGEvent) -> DockHoverInput {
 		guard let dockObserver else { return DockHoverInput() }
 		guard let hovered = dockObserver.currentHovered else {
@@ -268,19 +236,6 @@ final class EventTapController: @unchecked Sendable {
 		types.reduce(CGEventMask(0)) { mask, type in
 			mask | CGEventMask(1 << type.rawValue)
 		}
-	}
-}
-
-private func eventTypeName(_ type: CGEventType) -> String {
-	switch type {
-	case .scrollWheel: return "scrollWheel"
-	case .leftMouseDown: return "leftMouseDown"
-	case .flagsChanged: return "flagsChanged"
-	case .keyDown: return "keyDown"
-	case .mouseMoved: return "mouseMoved"
-	case .tapDisabledByTimeout: return "tapDisabledByTimeout"
-	case .tapDisabledByUserInput: return "tapDisabledByUserInput"
-	default: return "type(\(type.rawValue))"
 	}
 }
 
