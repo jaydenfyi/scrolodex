@@ -30,7 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			windowStackProvider: windowStackProvider,
 			overlayController: overlayController,
 			accessibilityWindowController: accessibilityWindowController,
-			scrollThreshold: runtime.scrollThreshold
+			scrollThreshold: runtime.scrollThreshold,
+			desktopApplicationNameProvider: { pid in
+				NSRunningApplication(processIdentifier: pid)?.localizedName
+			}
 		)
 		navigationCoordinator = coordinator
 

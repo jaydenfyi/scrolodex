@@ -6,6 +6,7 @@ public final class NavigationCoordinator {
 	private let windowStackProvider: any WindowStackProviding
 	private var overlayController: any OverlayPresenting
 	private let accessibilityWindowController: any WindowRaising
+	private let desktopApplicationNameProvider: (Int32) -> String?
 	private var session: NavigationSession?
 	private var sessionCandidates: [WindowCandidate] = []
 	private var overlayAnchorSession = OverlayAnchorSession()
@@ -18,11 +19,13 @@ public final class NavigationCoordinator {
 		windowStackProvider: any WindowStackProviding,
 		overlayController: any OverlayPresenting,
 		accessibilityWindowController: any WindowRaising,
-		scrollThreshold: Double = ScrollSensitivity.default
+		scrollThreshold: Double = ScrollSensitivity.default,
+		desktopApplicationNameProvider: @escaping (Int32) -> String? = { _ in nil }
 	) {
 		self.windowStackProvider = windowStackProvider
 		self.overlayController = overlayController
 		self.accessibilityWindowController = accessibilityWindowController
+		self.desktopApplicationNameProvider = desktopApplicationNameProvider
 	}
 
 	public func activate(_ context: TriggerContext) {
@@ -164,7 +167,7 @@ public final class NavigationCoordinator {
 	}
 
 	public func showDesktopSwitch(result: SpaceSwitchResult, cursor: CGPoint) {
-		let model = DesktopSwitchOverlayModel(result: result)
+		let model = DesktopSwitchOverlayModel(result: result, applicationName: desktopApplicationNameProvider)
 		let display = context.map { OverlayDisplayConfig(context: $0) } ?? .default
 		overlayController.showDesktopSwitch(
 			title: model.title, subtitle: model.subtitle,

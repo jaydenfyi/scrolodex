@@ -72,6 +72,47 @@ struct SpaceSwitcherTests {
         #expect(info?.currentLabel == "Desktop 3")
     }
 
+    @Test("switch overlay model resolves full-screen app label from target pid")
+    func switchOverlayModelResolvesFullScreenAppLabelFromTargetPID() {
+        let displays: [[String: Any]] = [
+            [
+                "Display Identifier": "target-display",
+                "Current Space": ["id64": 30],
+                "Spaces": [["id64": 30, "type": 0], ["id64": 40, "type": 4, "pid": 42]],
+            ]
+        ]
+        let info = SpaceInfo.fromManagedDisplaySpaces(displays, displayIdentifier: "target-display")
+        let result = SpaceSwitchResult.make(
+            requestedDirection: .right, effectiveDirection: .right, info: info, wrapAround: true)
+
+        let model = DesktopSwitchOverlayModel(result: result) { pid in
+            pid == 42 ? "Google Chrome" : nil
+        }
+
+        #expect(model.title == "Google Chrome")
+        #expect(model.subtitle == "2 of 2")
+    }
+
+    @Test("switch overlay model does not invent desktop label for full-screen app")
+    func switchOverlayModelDoesNotInventDesktopLabelForFullScreenApp() {
+        let result = SpaceSwitchResult(
+            requestedDirection: .right,
+            effectiveDirection: .right,
+            plan: [.right],
+            fromIndex: 0,
+            toIndex: 1,
+            spaceCount: 2,
+            fromLabel: "Desktop 3",
+            toLabel: nil,
+            fromApplicationPID: nil,
+            toApplicationPID: 42
+        )
+
+        let model = DesktopSwitchOverlayModel(result: result)
+
+        #expect(model.title == "Space 2")
+    }
+
     @Test("switch overlay model shows current desktop at boundary")
     func switchOverlayModelShowsCurrentDesktopAtBoundary() {
         let model = DesktopSwitchOverlayModel(result: SpaceSwitchResult(
@@ -123,7 +164,8 @@ struct SpaceSwitcherTests {
             plan: [.right],
             fromIndex: 0,
             toIndex: 1,
-            spaceCount: 3
+            spaceCount: 3,
+            toLabel: "Desktop 2"
         ))
 
         #expect(model.title == "Desktop 2")
@@ -138,6 +180,27 @@ struct SpaceSwitcherTests {
         #expect(accumulator.apply(delta: 3) == nil)
         #expect(accumulator.apply(delta: 1) == .right)
         #expect(accumulator.apply(delta: -6) == .left)
+    }
+
+    @Test("desktop scroll accumulator preserves excess delta")
+    func desktopScrollAccumulatorPreservesExcessDelta() {
+        var accumulator = DesktopScrollAccumulator(threshold: 6)
+
+        #expect(accumulator.apply(delta: 8) == .right)
+        #expect(accumulator.apply(delta: 4) == .right)
+        #expect(accumulator.apply(delta: -8) == .left)
+    }
+
+    @Test("desktop switch gate blocks overlapping swipe sequences")
+    func desktopSwitchGateBlocksOverlappingSwipeSequences() {
+        var gate = DesktopSwitchGate()
+        let first = gate.begin(now: 1, duration: 0.2)
+        let overlapping = gate.begin(now: 1.1, duration: 0.2)
+        let afterCompletion = gate.begin(now: 1.2, duration: 0.2)
+
+        #expect(first)
+        #expect(!overlapping)
+        #expect(afterCompletion)
     }
 
     @Test("animated dock swipe uses progressive frames")

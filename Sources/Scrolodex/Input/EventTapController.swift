@@ -196,9 +196,10 @@ final class EventTapController: @unchecked Sendable {
 			spaceSwitcher.animateScroll = trigger.animateScroll
 			spaceSwitcher.invertDirection = trigger.invertDirection
 			spaceSwitcher.wrapAround = trigger.wrapAround
-			let result = spaceSwitcher.switchDesktop(direction: direction, cursor: cursor)
-			Task { @MainActor [coordinator] in
-				coordinator.showDesktopSwitch(result: result, cursor: cursor)
+			if let result = spaceSwitcher.switchDesktop(direction: direction, cursor: cursor) {
+				Task { @MainActor [coordinator] in
+					coordinator.showDesktopSwitch(result: result, cursor: cursor)
+				}
 			}
 		case .cursorMove(let cursor):
 			Task { @MainActor [coordinator] in

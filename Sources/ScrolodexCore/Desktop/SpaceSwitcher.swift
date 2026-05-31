@@ -20,6 +20,7 @@ public enum SpaceSwitchDirection: Int, Sendable {
 public final class SpaceSwitcher: @unchecked Sendable {
 	private let animatedVelocity: Double = 600.0
 	private let instantVelocity: Double = 3000.0
+	private var switchGate = DesktopSwitchGate()
 
 	public var animateScroll: Bool = true
 	public var invertDirection: Bool = false
@@ -31,11 +32,11 @@ public final class SpaceSwitcher: @unchecked Sendable {
 		self.wrapAround = wrapAround
 	}
 
-	public func switchDesktop(direction: SpaceSwitchDirection) -> SpaceSwitchResult {
+	public func switchDesktop(direction: SpaceSwitchDirection) -> SpaceSwitchResult? {
 		switchDesktop(direction: direction, cursor: nil)
 	}
 
-	public func switchDesktop(direction: SpaceSwitchDirection, cursor: CGPoint?) -> SpaceSwitchResult {
+	public func switchDesktop(direction: SpaceSwitchDirection, cursor: CGPoint?) -> SpaceSwitchResult? {
 		let effectiveDirection: SpaceSwitchDirection
 		if invertDirection {
 			effectiveDirection = direction == .left ? .right : .left
@@ -64,13 +65,21 @@ public final class SpaceSwitcher: @unchecked Sendable {
 			return result
 		}
 
-		for plannedDirection in plan {
-			let frames = SpaceSwipeSequence.make(
+		let sequences = plan.map { plannedDirection in
+			SpaceSwipeSequence.make(
 				direction: plannedDirection,
 				animateScroll: animateScroll,
 				animatedVelocity: animatedVelocity,
 				instantVelocity: instantVelocity
 			)
+		}
+		let duration = max(0.18, sequences.flatMap { $0 }.map(\.delay).max() ?? 0)
+		guard switchGate.begin(now: CFAbsoluteTimeGetCurrent(), duration: duration) else {
+			Log.debug("desktop switch ignored while previous swipe is in flight")
+			return nil
+		}
+
+		for frames in sequences {
 			postDockSwipe(frames: frames, cursor: cursor)
 		}
 		Log.info(
@@ -126,6 +135,8 @@ public struct SpaceSwitchResult: Equatable, Sendable {
 	public let spaceCount: Int?
 	public let fromLabel: String?
 	public let toLabel: String?
+	public let fromApplicationPID: Int32?
+	public let toApplicationPID: Int32?
 
 	public init(
 		requestedDirection: SpaceSwitchDirection,
@@ -135,7 +146,9 @@ public struct SpaceSwitchResult: Equatable, Sendable {
 		toIndex: Int?,
 		spaceCount: Int?,
 		fromLabel: String? = nil,
-		toLabel: String? = nil
+		toLabel: String? = nil,
+		fromApplicationPID: Int32? = nil,
+		toApplicationPID: Int32? = nil
 	) {
 		self.requestedDirection = requestedDirection
 		self.effectiveDirection = effectiveDirection
@@ -145,6 +158,8 @@ public struct SpaceSwitchResult: Equatable, Sendable {
 		self.spaceCount = spaceCount
 		self.fromLabel = fromLabel
 		self.toLabel = toLabel
+		self.fromApplicationPID = fromApplicationPID
+		self.toApplicationPID = toApplicationPID
 	}
 
 	public var switched: Bool { !plan.isEmpty }
@@ -171,7 +186,9 @@ public struct SpaceSwitchResult: Equatable, Sendable {
 			toIndex: targetIndex,
 			spaceCount: info?.spaceCount,
 			fromLabel: info?.currentLabel,
-			toLabel: targetIndex.flatMap { info?.label(at: $0) }
+			toLabel: targetIndex.flatMap { info?.label(at: $0) },
+			fromApplicationPID: info?.currentApplicationPID,
+			toApplicationPID: targetIndex.flatMap { info?.applicationPID(at: $0) }
 		)
 	}
 }
@@ -182,9 +199,11 @@ public struct DesktopSwitchOverlayModel: Equatable, Sendable {
 	public let selectedIndex: Int
 	public let totalCount: Int
 
-	public init(result: SpaceSwitchResult) {
+	public init(result: SpaceSwitchResult, applicationName: (Int32) -> String? = { _ in nil }) {
 		if let toIndex = result.toIndex, let spaceCount = result.spaceCount {
-			title = result.toLabel ?? "Desktop \(toIndex + 1)"
+			title = result.toLabel
+				?? result.toApplicationPID.flatMap(applicationName)
+				?? "Space \(toIndex + 1)"
 			subtitle = "\(toIndex + 1) of \(spaceCount)"
 			selectedIndex = toIndex + 1
 			totalCount = spaceCount
@@ -316,19 +335,31 @@ public struct SpaceInfo: Equatable, Sendable {
 	public let currentIndex: Int
 	public let spaceCount: Int
 	public let currentLabel: String?
+	public let currentApplicationPID: Int32?
 	private let spaceLabels: [String?]
+	private let applicationPIDs: [Int32?]
 
-	public init(currentIndex: Int, spaceCount: Int, currentLabel: String? = nil, spaceLabels: [String?] = []) {
+	public init(
+		currentIndex: Int,
+		spaceCount: Int,
+		currentLabel: String? = nil,
+		currentApplicationPID: Int32? = nil,
+		spaceLabels: [String?] = [],
+		applicationPIDs: [Int32?] = []
+	) {
 		self.currentIndex = currentIndex
 		self.spaceCount = spaceCount
 		self.currentLabel = currentLabel
+		self.currentApplicationPID = currentApplicationPID
 		self.spaceLabels = spaceLabels
+		self.applicationPIDs = applicationPIDs
 	}
 
 	public static func == (lhs: SpaceInfo, rhs: SpaceInfo) -> Bool {
 		lhs.currentIndex == rhs.currentIndex
 			&& lhs.spaceCount == rhs.spaceCount
 			&& lhs.currentLabel == rhs.currentLabel
+			&& lhs.currentApplicationPID == rhs.currentApplicationPID
 	}
 
 	public static func current() -> SpaceInfo? {
@@ -350,17 +381,25 @@ public struct SpaceInfo: Equatable, Sendable {
 		guard let spaces = display["Spaces"] as? [[String: Any]] else { return nil }
 		guard let index = spaces.firstIndex(where: { id64(from: $0) == currentID }) else { return nil }
 		let labels = spaces.map { space in id64(from: space).flatMap { desktopLabels[$0] } }
+		let pids = spaces.map(applicationPID(from:))
 		return SpaceInfo(
 			currentIndex: index,
 			spaceCount: spaces.count,
 			currentLabel: desktopLabels[currentID],
-			spaceLabels: labels
+			currentApplicationPID: applicationPID(from: currentSpace) ?? pids[index],
+			spaceLabels: labels,
+			applicationPIDs: pids
 		)
 	}
 
 	func label(at index: Int) -> String? {
 		guard spaceLabels.indices.contains(index) else { return nil }
 		return spaceLabels[index]
+	}
+
+	func applicationPID(at index: Int) -> Int32? {
+		guard applicationPIDs.indices.contains(index) else { return nil }
+		return applicationPIDs[index]
 	}
 
 	private static func id64(from dictionary: [String: Any]) -> UInt64? {
@@ -385,6 +424,19 @@ public struct SpaceInfo: Equatable, Sendable {
 		}
 		if let type = dictionary["type"] as? NSNumber {
 			return type.intValue
+		}
+		return nil
+	}
+
+	private static func applicationPID(from dictionary: [String: Any]) -> Int32? {
+		if let pid = dictionary["pid"] as? Int32 {
+			return pid
+		}
+		if let pid = dictionary["pid"] as? Int {
+			return Int32(pid)
+		}
+		if let pid = dictionary["pid"] as? NSNumber {
+			return pid.int32Value
 		}
 		return nil
 	}
@@ -434,12 +486,12 @@ public struct DesktopScrollAccumulator: Sendable {
 		remainder += delta
 
 		if remainder >= threshold {
-			remainder = 0
+			remainder -= threshold
 			return .right
 		}
 
 		if remainder <= -threshold {
-			remainder = 0
+			remainder += threshold
 			return .left
 		}
 
@@ -448,6 +500,16 @@ public struct DesktopScrollAccumulator: Sendable {
 
 	public mutating func reset() {
 		remainder = 0
+	}
+}
+
+struct DesktopSwitchGate: Sendable {
+	private var blockedUntil: Double = 0
+
+	mutating func begin(now: Double, duration: Double) -> Bool {
+		guard now >= blockedUntil else { return false }
+		blockedUntil = now + duration
+		return true
 	}
 }
 
