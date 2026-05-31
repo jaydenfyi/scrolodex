@@ -207,7 +207,7 @@ public final class NavigationCoordinator {
 	}
 
 	private func refreshCandidatesIfCursorRelocated(cursor: CGPoint) -> Bool {
-		guard let ctx = context, ctx.scope == .underCursor, let last = lastCandidateCursor else { return false }
+		guard let ctx = context, let last = lastCandidateCursor else { return false }
 		let dx = cursor.x - last.x
 		let dy = cursor.y - last.y
 		let distance = sqrt(dx * dx + dy * dy)
