@@ -508,20 +508,34 @@ struct NavigationCoordinatorTests {
         #expect(overlay.hideCount == 2)
     }
 
-    @Test("cancel without session still hides overlay")
-    func cancelWithoutSessionHides() {
-        let provider = MockWindowStackProvider(candidates: [])
-        let overlay = MockOverlayPresenter()
+	@Test("cancel without session still hides overlay")
+	func cancelWithoutSessionHides() {
+		let provider = MockWindowStackProvider(candidates: [])
+		let overlay = MockOverlayPresenter()
         let raiser = MockWindowRaiser()
         let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
 
         coordinator.cancel()
 
-        #expect(overlay.hideCount == 1)
-    }
+		#expect(overlay.hideCount == 1)
+	}
 
-    @Test("selection wraps through candidates")
-    func selectionWraps() {
+	@Test("desktop cursor move repositions overlay without window session")
+	func desktopCursorMoveRepositionsWithoutWindowSession() {
+		let provider = MockWindowStackProvider(candidates: [])
+		let overlay = MockOverlayPresenter()
+		let raiser = MockWindowRaiser()
+		let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
+
+		coordinator.handleDesktopCursorMove(cursor: CGPoint(x: 200, y: 300))
+
+		#expect(overlay.repositionCount == 1)
+		#expect(overlay.lastRepositionCursor == CGPoint(x: 200, y: 300))
+		#expect(overlay.showCount == 0)
+	}
+
+	@Test("selection wraps through candidates")
+	func selectionWraps() {
         let candidates = [
             makeCandidate(id: 1, owner: "App1"),
             makeCandidate(id: 2, owner: "App2")

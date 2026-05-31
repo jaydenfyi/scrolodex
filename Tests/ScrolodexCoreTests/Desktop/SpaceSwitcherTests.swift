@@ -27,6 +27,68 @@ struct SpaceSwitcherTests {
         #expect(SpaceSwitchPlan.make(direction: .right, info: SpaceInfo(currentIndex: 2, spaceCount: 3), wrapAround: false) == [])
     }
 
+    @Test("switch plan does not synthesize a swipe for a known single-space display")
+    func switchPlanDoesNotSynthesizeSwipeForKnownSingleSpaceDisplay() {
+        #expect(SpaceSwitchPlan.make(direction: .right, info: SpaceInfo(currentIndex: 0, spaceCount: 1), wrapAround: true) == [])
+    }
+
+    @Test("space info resolves current space from the matching display")
+    func spaceInfoResolvesCurrentSpaceFromMatchingDisplay() {
+        let displays: [[String: Any]] = [
+            [
+                "Display Identifier": "large-display",
+                "Current Space": ["id64": 20],
+                "Spaces": [["id64": 10], ["id64": 20], ["id64": 30]],
+            ],
+            [
+                "Display Identifier": "small-display",
+                "Current Space": ["id64": 200],
+                "Spaces": [["id64": 100], ["id64": 200]],
+            ],
+        ]
+
+        let info = SpaceInfo.fromManagedDisplaySpaces(displays, displayIdentifier: "small-display")
+
+        #expect(info == SpaceInfo(currentIndex: 1, spaceCount: 2))
+    }
+
+    @Test("space info derives desktop label from global desktop order")
+    func spaceInfoDerivesDesktopLabelFromGlobalDesktopOrder() {
+        let displays: [[String: Any]] = [
+            [
+                "Display Identifier": "large-display",
+                "Current Space": ["id64": 20],
+                "Spaces": [["id64": 10, "type": 0], ["id64": 20, "type": 0]],
+            ],
+            [
+                "Display Identifier": "small-display",
+                "Current Space": ["id64": 30],
+                "Spaces": [["id64": 30, "type": 0]],
+            ],
+        ]
+
+        let info = SpaceInfo.fromManagedDisplaySpaces(displays, displayIdentifier: "small-display")
+
+        #expect(info?.currentLabel == "Desktop 3")
+    }
+
+    @Test("switch overlay model shows current desktop at boundary")
+    func switchOverlayModelShowsCurrentDesktopAtBoundary() {
+        let model = DesktopSwitchOverlayModel(result: SpaceSwitchResult(
+            requestedDirection: .right,
+            effectiveDirection: .right,
+            plan: [],
+            fromIndex: 0,
+            toIndex: nil,
+            spaceCount: 1,
+            fromLabel: "Desktop 3",
+            toLabel: nil
+        ))
+
+        #expect(model.title == "Desktop 3")
+        #expect(model.subtitle == "1 of 1")
+    }
+
     @Test("switch plan wraps by walking the opposite direction")
     func switchPlanWrapsByWalkingOppositeDirection() {
         #expect(SpaceSwitchPlan.make(direction: .left, info: SpaceInfo(currentIndex: 0, spaceCount: 3), wrapAround: true) == [.right, .right])

@@ -71,6 +71,7 @@ public enum WindowAction: Equatable, Sendable {
 public enum DesktopAction: Equatable, Sendable {
 	case activate(DesktopSwitchTrigger)
 	case `switch`(SpaceSwitchDirection, trigger: DesktopSwitchTrigger, cursor: CGPoint)
+	case cursorMove(CGPoint)
 	case released
 }
 

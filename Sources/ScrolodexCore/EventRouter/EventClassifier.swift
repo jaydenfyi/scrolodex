@@ -154,6 +154,10 @@ public struct EventClassifier: Sendable {
 			return (.consume, .none)
 		}
 
+		if session.activeDesktopTrigger != nil && event.type == .mouseMoved {
+			return (.consumeAndPassthrough, .desktop(.cursorMove(event.cursorLocation)))
+		}
+
 		return nil
 	}
 

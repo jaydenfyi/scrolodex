@@ -479,6 +479,23 @@ struct EventClassifierTests {
 		}
 	}
 
+	@Test("mouseMoved during active desktop session returns desktop cursorMove")
+	func desktopMouseMovedDuringActiveSession() {
+		let trigger = makeDesktopTrigger(flags: .maskAlternate)
+		let classifier = EventClassifier(triggers: [], desktopTriggers: [trigger])
+		var session = RouterSessionState(activeDesktopTrigger: trigger)
+		let event = RouterEvent(
+			type: .mouseMoved, flags: [], keyCode: 0,
+			cursorLocation: CGPoint(x: 200, y: 300))
+
+		let (directive, action) = classifier.classify(
+			event: event, dockHover: DockHoverInput(), session: &session)
+
+		#expect(directive == .consumeAndPassthrough)
+		#expect(action == .desktop(.cursorMove(CGPoint(x: 200, y: 300))))
+		#expect(session.activeDesktopTrigger == trigger)
+	}
+
 	@Test("desktop trigger takes priority over window trigger")
 	func desktopTriggerPriorityOverWindowTrigger() {
 		let windowTrigger = makeTrigger(flags: .maskControl)

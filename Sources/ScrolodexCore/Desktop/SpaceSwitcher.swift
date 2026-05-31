@@ -1,3 +1,4 @@
+import ApplicationServices
 import CoreGraphics
 import Darwin
 import Foundation
@@ -31,6 +32,10 @@ public final class SpaceSwitcher: @unchecked Sendable {
 	}
 
 	public func switchDesktop(direction: SpaceSwitchDirection) -> SpaceSwitchResult {
+		switchDesktop(direction: direction, cursor: nil)
+	}
+
+	public func switchDesktop(direction: SpaceSwitchDirection, cursor: CGPoint?) -> SpaceSwitchResult {
 		let effectiveDirection: SpaceSwitchDirection
 		if invertDirection {
 			effectiveDirection = direction == .left ? .right : .left
@@ -38,7 +43,8 @@ public final class SpaceSwitcher: @unchecked Sendable {
 			effectiveDirection = direction
 		}
 
-		let info = SpaceInfo.current()
+		let targetDisplayID = cursor.flatMap(Self.displayID(containing:))
+		let info = SpaceInfo.current(displayID: targetDisplayID)
 
 		let plan = SpaceSwitchPlan.make(
 			direction: effectiveDirection,
@@ -65,7 +71,7 @@ public final class SpaceSwitcher: @unchecked Sendable {
 				animatedVelocity: animatedVelocity,
 				instantVelocity: instantVelocity
 			)
-			postDockSwipe(frames: frames)
+			postDockSwipe(frames: frames, cursor: cursor)
 		}
 		Log.info(
 			"switched desktop direction=%@ animate=%@ steps=%d",
@@ -73,20 +79,31 @@ public final class SpaceSwitcher: @unchecked Sendable {
 		return result
 	}
 
-	private func postDockSwipe(frames: [SpaceSwipeFrame]) {
+	private static func displayID(containing point: CGPoint) -> CGDirectDisplayID? {
+		var count: UInt32 = 0
+		var displays = [CGDirectDisplayID](repeating: 0, count: 1)
+		let error = CGGetDisplaysWithPoint(point, UInt32(displays.count), &displays, &count)
+		guard error == .success, count > 0 else { return nil }
+		return displays[0]
+	}
+
+	private func postDockSwipe(frames: [SpaceSwipeFrame], cursor: CGPoint?) {
 		for frame in frames {
 			if frame.delay == 0 {
-				postDockSwipe(frame: frame)
+				postDockSwipe(frame: frame, cursor: cursor)
 			} else {
 				DispatchQueue.main.asyncAfter(deadline: .now() + frame.delay) { [weak self] in
-					self?.postDockSwipe(frame: frame)
+					self?.postDockSwipe(frame: frame, cursor: cursor)
 				}
 			}
 		}
 	}
 
-	private func postDockSwipe(frame: SpaceSwipeFrame) {
+	private func postDockSwipe(frame: SpaceSwipeFrame, cursor: CGPoint?) {
 		guard let event = CGEvent(source: nil) else { return }
+		if let cursor {
+			event.location = cursor
+		}
 
 		event.setIntegerValueField(EventField.eventType, value: Int64(kCGSEventDockControl))
 		event.setIntegerValueField(EventField.gestureHIDType, value: Int64(kIOHIDEventTypeDockSwipe))
@@ -107,6 +124,28 @@ public struct SpaceSwitchResult: Equatable, Sendable {
 	public let fromIndex: Int?
 	public let toIndex: Int?
 	public let spaceCount: Int?
+	public let fromLabel: String?
+	public let toLabel: String?
+
+	public init(
+		requestedDirection: SpaceSwitchDirection,
+		effectiveDirection: SpaceSwitchDirection,
+		plan: [SpaceSwitchDirection],
+		fromIndex: Int?,
+		toIndex: Int?,
+		spaceCount: Int?,
+		fromLabel: String? = nil,
+		toLabel: String? = nil
+	) {
+		self.requestedDirection = requestedDirection
+		self.effectiveDirection = effectiveDirection
+		self.plan = plan
+		self.fromIndex = fromIndex
+		self.toIndex = toIndex
+		self.spaceCount = spaceCount
+		self.fromLabel = fromLabel
+		self.toLabel = toLabel
+	}
 
 	public var switched: Bool { !plan.isEmpty }
 
@@ -130,7 +169,9 @@ public struct SpaceSwitchResult: Equatable, Sendable {
 			plan: plan,
 			fromIndex: info?.currentIndex,
 			toIndex: targetIndex,
-			spaceCount: info?.spaceCount
+			spaceCount: info?.spaceCount,
+			fromLabel: info?.currentLabel,
+			toLabel: targetIndex.flatMap { info?.label(at: $0) }
 		)
 	}
 }
@@ -143,9 +184,18 @@ public struct DesktopSwitchOverlayModel: Equatable, Sendable {
 
 	public init(result: SpaceSwitchResult) {
 		if let toIndex = result.toIndex, let spaceCount = result.spaceCount {
-			title = "Desktop \(toIndex + 1)"
+			title = result.toLabel ?? "Desktop \(toIndex + 1)"
 			subtitle = "\(toIndex + 1) of \(spaceCount)"
 			selectedIndex = toIndex + 1
+			totalCount = spaceCount
+		} else if !result.switched,
+			let fromIndex = result.fromIndex,
+			let spaceCount = result.spaceCount,
+			let fromLabel = result.fromLabel
+		{
+			title = fromLabel
+			subtitle = "\(fromIndex + 1) of \(spaceCount)"
+			selectedIndex = fromIndex + 1
 			totalCount = spaceCount
 		} else {
 			title = result.effectiveDirection == .right ? "Next Desktop" : "Previous Desktop"
@@ -265,16 +315,101 @@ enum SpaceSwipeSequence {
 public struct SpaceInfo: Equatable, Sendable {
 	public let currentIndex: Int
 	public let spaceCount: Int
+	public let currentLabel: String?
+	private let spaceLabels: [String?]
+
+	public init(currentIndex: Int, spaceCount: Int, currentLabel: String? = nil, spaceLabels: [String?] = []) {
+		self.currentIndex = currentIndex
+		self.spaceCount = spaceCount
+		self.currentLabel = currentLabel
+		self.spaceLabels = spaceLabels
+	}
+
+	public static func == (lhs: SpaceInfo, rhs: SpaceInfo) -> Bool {
+		lhs.currentIndex == rhs.currentIndex
+			&& lhs.spaceCount == rhs.spaceCount
+			&& lhs.currentLabel == rhs.currentLabel
+	}
 
 	public static func current() -> SpaceInfo? {
-		SpaceInfoProvider().current()
+		SpaceInfoProvider().current(displayID: nil)
+	}
+
+	public static func current(displayID: CGDirectDisplayID?) -> SpaceInfo? {
+		SpaceInfoProvider().current(displayID: displayID)
+	}
+
+	static func fromManagedDisplaySpaces(_ displays: [[String: Any]], displayIdentifier: String) -> SpaceInfo? {
+		let desktopLabels = desktopLabelsByID(from: displays)
+		guard let display = displays.first(where: { $0["Display Identifier"] as? String == displayIdentifier }) else {
+			return nil
+		}
+		guard let currentSpace = display["Current Space"] as? [String: Any], let currentID = id64(from: currentSpace) else {
+			return nil
+		}
+		guard let spaces = display["Spaces"] as? [[String: Any]] else { return nil }
+		guard let index = spaces.firstIndex(where: { id64(from: $0) == currentID }) else { return nil }
+		let labels = spaces.map { space in id64(from: space).flatMap { desktopLabels[$0] } }
+		return SpaceInfo(
+			currentIndex: index,
+			spaceCount: spaces.count,
+			currentLabel: desktopLabels[currentID],
+			spaceLabels: labels
+		)
+	}
+
+	func label(at index: Int) -> String? {
+		guard spaceLabels.indices.contains(index) else { return nil }
+		return spaceLabels[index]
+	}
+
+	private static func id64(from dictionary: [String: Any]) -> UInt64? {
+		if let id = dictionary["id64"] as? UInt64 {
+			return id
+		}
+		if let id = dictionary["id64"] as? Int {
+			return UInt64(id)
+		}
+		if let id = dictionary["id64"] as? NSNumber {
+			return id.uint64Value
+		}
+		return nil
+	}
+
+	private static func spaceType(from dictionary: [String: Any]) -> Int? {
+		if let type = dictionary["type"] as? Int {
+			return type
+		}
+		if let type = dictionary["type"] as? UInt64 {
+			return Int(type)
+		}
+		if let type = dictionary["type"] as? NSNumber {
+			return type.intValue
+		}
+		return nil
+	}
+
+	private static func desktopLabelsByID(from displays: [[String: Any]]) -> [UInt64: String] {
+		var labels: [UInt64: String] = [:]
+		var desktopNumber = 1
+		for display in displays {
+			guard let spaces = display["Spaces"] as? [[String: Any]] else { continue }
+			for space in spaces where spaceType(from: space) == 0 {
+				if let id = id64(from: space) {
+					labels[id] = "Desktop \(desktopNumber)"
+				}
+				desktopNumber += 1
+			}
+		}
+		return labels
 	}
 }
 
 enum SpaceSwitchPlan {
 	static func make(direction: SpaceSwitchDirection, info: SpaceInfo?, wrapAround: Bool) -> [SpaceSwitchDirection]
 	{
-		guard let info, info.spaceCount > 1 else { return [direction] }
+		guard let info else { return [direction] }
+		guard info.spaceCount > 1 else { return [] }
 
 		switch direction {
 		case .left where info.currentIndex <= 0:
@@ -341,20 +476,43 @@ private enum SkyLightSpaceSymbols {
 }
 
 private final class SpaceInfoProvider {
-	func current() -> SpaceInfo? {
+	func current(displayID: CGDirectDisplayID?) -> SpaceInfo? {
 		guard let mainConnection = SkyLightSpaceSymbols.mainConnection,
-			let getActiveSpace = SkyLightSpaceSymbols.getActiveSpace,
 			let copyManagedDisplaySpaces = SkyLightSpaceSymbols.copyManagedDisplaySpaces
 		else { return nil }
 
 		let connection = mainConnection()
 		guard connection != 0 else { return nil }
 
+		guard let displays = copyManagedDisplaySpaces(connection, nil)?.takeRetainedValue() else { return nil }
+		if let displayID, let displayIdentifier = Self.displayIdentifier(for: displayID) {
+			return parse(displays: displays, displayIdentifier: displayIdentifier)
+		}
+
+		guard let getActiveSpace = SkyLightSpaceSymbols.getActiveSpace else { return nil }
 		let activeSpace = getActiveSpace(connection)
 		guard activeSpace != 0 else { return nil }
-
-		guard let displays = copyManagedDisplaySpaces(connection, nil)?.takeRetainedValue() else { return nil }
 		return parse(displays: displays, activeSpace: activeSpace)
+	}
+
+	private static func displayIdentifier(for displayID: CGDirectDisplayID) -> String? {
+		guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return nil }
+		return CFUUIDCreateString(nil, uuid) as String?
+	}
+
+	private func parse(displays: CFArray, displayIdentifier: String) -> SpaceInfo? {
+		let displayCount = CFArrayGetCount(displays)
+		var displayDictionaries: [[String: Any]] = []
+		for displayIndex in 0..<displayCount {
+			guard let displayValue = CFArrayGetValueAtIndex(displays, displayIndex) else { continue }
+
+			let displayObject = unsafeBitCast(displayValue, to: CFTypeRef.self)
+			guard CFGetTypeID(displayObject) == CFDictionaryGetTypeID() else { continue }
+			if let display = displayObject as? [String: Any] {
+				displayDictionaries.append(display)
+			}
+		}
+		return SpaceInfo.fromManagedDisplaySpaces(displayDictionaries, displayIdentifier: displayIdentifier)
 	}
 
 	private func parse(displays: CFArray, activeSpace: CGSSpaceID) -> SpaceInfo? {

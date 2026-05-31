@@ -172,6 +172,10 @@ public final class NavigationCoordinator {
 			display: display)
 	}
 
+	public func handleDesktopCursorMove(cursor: CGPoint) {
+		overlayController.repositionOverlay(to: cursor)
+	}
+
 	public func cancel() {
 		guard session != nil else {
 			lastCandidateCursor = nil
