@@ -20,19 +20,22 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private let dockObserver: DockObserver?
 	private let dockHoverConfigs: [DockHoverConfiguration]
 	private let dockHandler: any DockActionHandling
+	private let cursorTrackingState: WindowCursorTrackingState
 
 	init(
 		coordinator: NavigationCoordinator,
 		scrollThreshold: Double = ScrollSensitivity.default,
 		dockObserver: DockObserver? = nil,
 		dockHoverConfigs: [DockHoverConfiguration] = [],
-		dockHandler: any DockActionHandling
+		dockHandler: any DockActionHandling,
+		cursorTrackingState: WindowCursorTrackingState = WindowCursorTrackingState()
 	) {
 		self.coordinator = coordinator
 		self.scrollThreshold = scrollThreshold
 		self.dockObserver = dockObserver
 		self.dockHoverConfigs = dockHoverConfigs
 		self.dockHandler = dockHandler
+		self.cursorTrackingState = cursorTrackingState
 	}
 
 	func start(triggerConfigs: [GestureTriggerConfig]) {
@@ -89,6 +92,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		}
 		eventTap = nil
 		runLoopSource = nil
+		cursorTrackingState.isActive = false
 		gestureTracker.reset()
 		activeTriggerConfig = nil
 		triggerActive = false
@@ -150,6 +154,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 						let threshold = scrollThreshold
 						let cursor = cgCursorLocation()
 						let resolvedDockAction = resolveDockAction(cursor: cursor)
+						cursorTrackingState.isActive = resolvedDockAction == nil
 						Task { @MainActor [coordinator, dockHandler] in
 							if let resolvedDockAction {
 								dockHandler.handle(dockAction: resolvedDockAction)
@@ -207,6 +212,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private func releaseGesture() {
 		if triggerActive {
 			triggerActive = false
+			cursorTrackingState.isActive = false
 			Task { @MainActor [coordinator] in
 				coordinator.handleTriggerRelease()
 			}

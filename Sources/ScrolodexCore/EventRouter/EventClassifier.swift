@@ -16,6 +16,7 @@ public struct EventClassifier: Sendable {
 	public func classify(
 		event: RouterEvent,
 		dockHover: DockHoverInput,
+		externalWindowSessionActive: Bool = false,
 		session: inout RouterSessionState
 	) -> (RouterDirective, RouterAction) {
 		if let result = handleTapState(event: event, session: &session) { return result }
@@ -37,6 +38,10 @@ public struct EventClassifier: Sendable {
 		) { return result }
 
 		if let result = handleDockHover(event: event, dockHover: dockHover, session: &session) { return result }
+
+		if externalWindowSessionActive && event.type == .mouseMoved {
+			return (.consumeAndPassthrough, .window(.cursorMove(event.cursorLocation)))
+		}
 
 		return handlePolicyAction(
 			event: event,

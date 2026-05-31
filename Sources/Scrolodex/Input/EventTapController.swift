@@ -14,6 +14,7 @@ final class EventTapController: @unchecked Sendable {
 	private let dockObserver: DockObserver?
 	private let dockHoverConfigs: [DockHoverConfiguration]
 	private let dockHandler: any DockActionHandling
+	private let cursorTrackingState: WindowCursorTrackingState
 	private let classifier: EventClassifier
 	private var session: RouterSessionState
 	private var eventTap: CFMachPort?
@@ -27,6 +28,7 @@ final class EventTapController: @unchecked Sendable {
 		spaceSwitcher: SpaceSwitcher = SpaceSwitcher(), dockObserver: DockObserver? = nil,
 		dockHoverConfigs: [DockHoverConfiguration] = [],
 		dockHandler: any DockActionHandling,
+		cursorTrackingState: WindowCursorTrackingState = WindowCursorTrackingState(),
 		permissionCheck: @escaping () -> Bool = { true }
 	) {
 		self.coordinator = coordinator
@@ -34,6 +36,7 @@ final class EventTapController: @unchecked Sendable {
 		self.dockObserver = dockObserver
 		self.dockHoverConfigs = dockHoverConfigs
 		self.dockHandler = dockHandler
+		self.cursorTrackingState = cursorTrackingState
 		self.scrollThreshold = desktopScrollThreshold
 		self.permissionCheck = permissionCheck
 		self.classifier = EventClassifier(
@@ -107,6 +110,7 @@ final class EventTapController: @unchecked Sendable {
 		let (directive, action) = classifier.classify(
 			event: routerEvent,
 			dockHover: dockHoverInput,
+			externalWindowSessionActive: cursorTrackingState.isActive,
 			session: &session
 		)
 

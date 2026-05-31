@@ -153,6 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			coordinator: coordinator,
 			scrollThreshold: runtime.scrollThreshold
 		)
+		let cursorTrackingState = WindowCursorTrackingState()
 
 		let eventTapController = EventTapController(
 			coordinator: coordinator,
@@ -162,6 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			dockObserver: dockObserver,
 			dockHoverConfigs: enabledDockConfigs,
 			dockHandler: dockHandler,
+			cursorTrackingState: cursorTrackingState,
 			permissionCheck: { [weak self] in
 				self?.permissionController.allPermissionsGranted ?? false
 			}
@@ -175,7 +177,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				scrollThreshold: runtime.scrollThreshold,
 				dockObserver: dockObserver,
 				dockHoverConfigs: enabledDockConfigs,
-				dockHandler: dockHandler
+				dockHandler: dockHandler,
+				cursorTrackingState: cursorTrackingState
 			)
 			observer.start(triggerConfigs: runtime.gestureConfigs)
 			self.gestureObserver = observer

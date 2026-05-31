@@ -222,6 +222,23 @@ struct EventClassifierTests {
 		#expect(action == .none)
 	}
 
+	@Test("mouse move during external window session repositions overlay")
+	func mouseMoveDuringExternalWindowSessionRepositionsOverlay() {
+		let classifier = EventClassifier(triggers: [makeTrigger(flags: .maskControl)], desktopTriggers: [])
+		var session = RouterSessionState()
+		let cursor = CGPoint(x: 180, y: 240)
+		let event = RouterEvent(type: .mouseMoved, flags: [], keyCode: 0, cursorLocation: cursor)
+
+		let (directive, action) = classifier.classify(
+			event: event,
+			dockHover: DockHoverInput(),
+			externalWindowSessionActive: true,
+			session: &session)
+
+		#expect(directive == .consumeAndPassthrough)
+		#expect(action == .window(.cursorMove(cursor)))
+	}
+
 	@Test("keyboard navigation activates matching trigger")
 	func keyboardNavigationActivatesTrigger() {
 		let forward = KeyboardHotkeyConfiguration(flags: .maskControl, keyCode: 49)
