@@ -1,4 +1,12 @@
 # Changelog
+## 0.0.7 (2026-05-31)
+
+### Fixes
+
+- Reduce desktop switch gate duration for instant (non-animated) mode from 180ms to 80ms, allowing ~12 switches/second instead of ~5.5.
+- Fix Trackpad Gesture activation by observing the full gesture event lifecycle and counting stationary fingers that remain down during a swipe.
+- Keep the Tooltip overlay attached to cursor movement while a Trackpad Gesture navigation session remains active after lifting to one finger.
+
 ## 0.0.6 (2026-05-31)
 
 ### Fixes
