@@ -1,4 +1,15 @@
 # Changelog
+## 0.0.6 (2026-05-31)
+
+### Fixes
+
+- Fix window stack not refreshing when cursor crosses monitors during active session. Remove `.underCursor`-only guard from cursor relocation refresh so all scope types update candidates on cross-monitor movement.
+- Keep the Desktop Switch overlay pinned to the cursor while a desktop trigger is active.
+- Show app names for full-screen Desktop Switch targets and avoid inventing duplicate Desktop labels for unlabeled Spaces.
+- Keep the Desktop Switch overlay following the cursor when switching between a full-screen Space and a regular Desktop.
+- Fix Desktop Switch targeting the focused display instead of the display under the cursor. Space metadata now resolves per display, no-op boundaries keep showing the current Desktop label, and synthesized Dock swipe events carry the cursor location.
+- Improve Desktop Switch scroll precision by preserving excess scroll delta and blocking overlapping synthetic swipe sequences.
+
 ## 0.0.5 (2026-05-30)
 
 ### Fixes
