@@ -534,6 +534,19 @@ struct NavigationCoordinatorTests {
 		#expect(overlay.showCount == 0)
 	}
 
+	@Test("desktop trigger release hides overlay without window session")
+	func desktopTriggerReleaseHidesOverlayWithoutWindowSession() {
+		let provider = MockWindowStackProvider(candidates: [])
+		let overlay = MockOverlayPresenter()
+		let raiser = MockWindowRaiser()
+		let coordinator = makeCoordinator(provider: provider, overlay: overlay, raiser: raiser)
+
+		coordinator.handleDesktopTriggerRelease()
+
+		#expect(overlay.hideCount == 1)
+		#expect(overlay.showCount == 0)
+	}
+
 	@Test("selection wraps through candidates")
 	func selectionWraps() {
         let candidates = [

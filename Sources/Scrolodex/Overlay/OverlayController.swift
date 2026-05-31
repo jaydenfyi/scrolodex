@@ -134,7 +134,10 @@ final class OverlayController: OverlayPresenting {
 		let appKitCursor = OverlayPlacement.appKitPoint(fromCGDisplayPoint: cursor, screens: mappings)
 		targetCursor = appKitCursor
 
-		guard let badgePanel, badgePanel.isVisible else { return }
+		guard let badgePanel else {
+			Log.debug("overlay reposition skipped; no badge cursor=%@ appKit=%@", NSStringFromPoint(cursor), NSStringFromPoint(appKitCursor))
+			return
+		}
 
 		if let current = smoothedCursor {
 			smoothedCursor = CGPoint(
@@ -144,6 +147,10 @@ final class OverlayController: OverlayPresenting {
 			smoothedCursor = appKitCursor
 		}
 		applySmoothedFrame(badgePanel: badgePanel)
+		Log.debug(
+			"overlay reposition cursor=%@ appKit=%@ smoothed=%@ visible=%@ ordered=%@ frame=%@",
+			NSStringFromPoint(cursor), NSStringFromPoint(appKitCursor), NSStringFromPoint(smoothedCursor ?? .zero),
+			String(badgePanel.isVisible), String(badgePanel.isMiniaturized == false), NSStringFromRect(badgePanel.frame))
 
 		if !isConverged {
 			ensureConvergenceTimer(badgePanel: badgePanel)
@@ -186,7 +193,7 @@ final class OverlayController: OverlayPresenting {
 			x: current.x + (target.x - current.x) * smoothing,
 			y: current.y + (target.y - current.y) * smoothing)
 
-		guard let badgePanel, badgePanel.isVisible else {
+		guard let badgePanel else {
 			stopConvergenceTimer()
 			return
 		}
@@ -284,6 +291,9 @@ final class OverlayController: OverlayPresenting {
 		panel.setFrame(frame, display: true)
 		panel.orderFrontRegardless()
 		badgeView.needsDisplay = true
+		Log.debug(
+			"overlay badge shown title=%@ cursor=%@ appKit=%@ visible=%@ frame=%@",
+			title, NSStringFromPoint(cursor), NSStringFromPoint(appKitCursor), String(panel.isVisible), NSStringFromRect(panel.frame))
 	}
 
 	private func showTile(

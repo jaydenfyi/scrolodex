@@ -18,7 +18,7 @@ public enum SpaceSwitchDirection: Int, Sendable {
 /// If properties change between frames, later frames may use stale values. This is benign —
 /// it only affects animation smoothness during a property change mid-switch.
 public final class SpaceSwitcher: @unchecked Sendable {
-	private let animatedVelocity: Double = 600.0
+	private let animatedVelocity: Double = 520.0
 	private let instantVelocity: Double = 3000.0
 	private var switchGate = DesktopSwitchGate()
 
@@ -291,7 +291,7 @@ enum SpaceSwipeSequence {
 			]
 		}
 
-		let changedProgress: [Double] = [0.16, 0.32, 0.48, 0.64, 0.80, 0.96]
+		let changedProgress: [Double] = [0.08, 0.18, 0.32, 0.50, 0.68, 0.84, 0.94, 0.99]
 		var frames: [SpaceSwipeFrame] = [
 			frame(
 				phase: .began, direction: direction, progressMagnitude: 0, velocity: animatedVelocity,
@@ -305,14 +305,14 @@ enum SpaceSwipeSequence {
 					direction: direction,
 					progressMagnitude: progress,
 					velocity: animatedVelocity,
-					delay: Double(index + 1) * 0.025
+					delay: Double(index + 1) * 0.02
 				))
 		}
 
 		frames.append(
 			frame(
 				phase: .ended, direction: direction, progressMagnitude: 1, velocity: animatedVelocity,
-				delay: 0.20))
+				delay: 0.18))
 		return frames
 	}
 

@@ -15,16 +15,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	private var eventTapController: EventTapController?
 	private var dockObserver: DockObserver?
 	private var gestureObserver: TrackpadGestureObserver?
+	private var runtimeConfigurationChangeDetector: RuntimeConfigurationChangeDetector?
 	private var permissionPollTimer: Timer?
 	private var revocationMonitorTimer: Timer?
 	private var settingsWindow: NSWindow?
 
 	func applicationDidFinishLaunching(_ notification: Notification) {
+		Log.debugEnabled = UserDefaults.standard.bool(forKey: "debugLogging")
 		Log.info("launched bundle=%@", Bundle.main.bundleIdentifier ?? "unknown")
 
 		SettingKey.registerDefaults()
 
 		let runtime = UserDefaultsRuntimeConfigurationReader.read()
+		runtimeConfigurationChangeDetector = RuntimeConfigurationChangeDetector(current: runtime)
 
 		let coordinator = NavigationCoordinator(
 			windowStackProvider: windowStackProvider,
@@ -109,6 +112,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	private func handleSettingsChanged() {
 		guard let coordinator = navigationCoordinator else { return }
+		let runtime = UserDefaultsRuntimeConfigurationReader.read()
+		if runtimeConfigurationChangeDetector?.updateIfChanged(runtime) == false {
+			return
+		}
 		statusBarController?.refresh()
 		restartEventTap(with: coordinator)
 	}

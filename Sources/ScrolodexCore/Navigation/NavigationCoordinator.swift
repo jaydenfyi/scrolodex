@@ -167,6 +167,10 @@ public final class NavigationCoordinator {
 	}
 
 	public func showDesktopSwitch(result: SpaceSwitchResult, cursor: CGPoint) {
+		Log.debug(
+			"desktop coordinator show cursor=%@ switched=%@ from=%@ to=%@ count=%@",
+			NSStringFromPoint(cursor), String(result.switched), String(describing: result.fromIndex),
+			String(describing: result.toIndex), String(describing: result.spaceCount))
 		let model = DesktopSwitchOverlayModel(result: result, applicationName: desktopApplicationNameProvider)
 		let display = context.map { OverlayDisplayConfig(context: $0) } ?? .default
 		overlayController.showDesktopSwitch(
@@ -176,7 +180,13 @@ public final class NavigationCoordinator {
 	}
 
 	public func handleDesktopCursorMove(cursor: CGPoint) {
+		Log.debug("desktop coordinator cursorMove cursor=%@", NSStringFromPoint(cursor))
 		overlayController.repositionOverlay(to: cursor)
+	}
+
+	public func handleDesktopTriggerRelease() {
+		Log.debug("desktop coordinator release")
+		overlayController.hide()
 	}
 
 	public func cancel() {

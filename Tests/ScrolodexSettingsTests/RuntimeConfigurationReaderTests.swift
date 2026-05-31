@@ -88,4 +88,30 @@ struct RuntimeConfigurationReaderTests {
 
 		#expect(config.globallyDisabled)
 	}
+
+	@Test("change detector ignores notifications when runtime configuration is unchanged")
+	func changeDetectorIgnoresUnchangedRuntimeConfiguration() {
+		let defaults = makeDefaults(overrides: [
+			"desktopSwitch.enabled": true,
+		])
+		var detector = RuntimeConfigurationChangeDetector(current: UserDefaultsRuntimeConfigurationReader.read(from: defaults))
+
+		defaults.set(true, forKey: "debugLogging")
+		let changed = detector.updateIfChanged(UserDefaultsRuntimeConfigurationReader.read(from: defaults))
+
+		#expect(!changed)
+	}
+
+	@Test("change detector reports changed runtime configuration")
+	func changeDetectorReportsChangedRuntimeConfiguration() {
+		let defaults = makeDefaults(overrides: [
+			"desktopSwitch.enabled": true,
+		])
+		var detector = RuntimeConfigurationChangeDetector(current: UserDefaultsRuntimeConfigurationReader.read(from: defaults))
+
+		defaults.set(false, forKey: "desktopSwitch.enabled")
+		let changed = detector.updateIfChanged(UserDefaultsRuntimeConfigurationReader.read(from: defaults))
+
+		#expect(changed)
+	}
 }

@@ -205,13 +205,15 @@ struct SpaceSwitcherTests {
 
     @Test("animated dock swipe uses progressive frames")
     func animatedDockSwipeUsesProgressiveFrames() {
-        let frames = SpaceSwipeSequence.make(direction: .right, animateScroll: true, animatedVelocity: 600, instantVelocity: 3000)
+		let frames = SpaceSwipeSequence.make(direction: .right, animateScroll: true, animatedVelocity: 520, instantVelocity: 3000)
 
-        #expect(frames.count > 3)
+        #expect(frames.count == 10)
         #expect(frames.first?.phase == .began)
         #expect(frames.last?.phase == .ended)
-        #expect(frames.contains { $0.phase == .changed && $0.progress > 0.5 })
-        #expect(frames.allSatisfy { $0.delay >= 0 })
+        #expect(frames.filter { $0.phase == .changed }.map(\.progress) == [0.08, 0.18, 0.32, 0.50, 0.68, 0.84, 0.94, 0.99])
+        #expect(frames.filter { $0.phase == .changed }.map(\.delay) == [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16])
+        #expect(frames.last?.delay == 0.18)
+        #expect(frames.allSatisfy { $0.velocityX == 520 && $0.velocityY == 520 })
     }
 
     @Test("instant dock swipe uses compact high velocity sequence")
