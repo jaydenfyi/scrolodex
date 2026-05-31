@@ -7,7 +7,7 @@ import ScrolodexCore
 /// - The HID event tap callback fires on the main run loop (added to `CFRunLoopGetMain()`).
 /// - `start()`/`stop()` are only called from `@MainActor` (via `AppDelegate`).
 /// - Both execute on the main thread, so all mutations are serialized.
-	final class TrackpadGestureObserver: @unchecked Sendable {
+final class TrackpadGestureObserver: @unchecked Sendable {
 	private let coordinator: NavigationCoordinator
 	private(set) var eventTap: CFMachPort?
 	private var runLoopSource: CFRunLoopSource?
@@ -40,8 +40,9 @@ import ScrolodexCore
 		guard !triggerConfigs.isEmpty else { return }
 		configs = triggerConfigs
 
-		let gestureTypeRaw: UInt32 = UInt32(NSEvent.EventType.gesture.rawValue)
-		let mask = CGEventMask(1 << UInt64(gestureTypeRaw))
+		let mask = Self.observedEventTypes.reduce(CGEventMask(0)) { mask, eventType in
+			mask | CGEventMask(1 << UInt64(eventType.rawValue))
+		}
 		let refcon = Unmanaged.passUnretained(self).toOpaque()
 		guard
 			let tap = CGEvent.tapCreate(
@@ -74,7 +75,8 @@ import ScrolodexCore
 			CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
 		}
 		CGEvent.tapEnable(tap: tap, enable: true)
-		Log.info("gesture observer started configs=%d", triggerConfigs.count)
+		let configSummary = triggerConfigs.map(\.fingerCount.displayName).joined(separator: ", ")
+		Log.info("gesture observer started configs=%@", configSummary as NSString)
 	}
 
 	func stop() {
@@ -97,6 +99,10 @@ import ScrolodexCore
 		guard let nsEvent = NSEvent(cgEvent: cgEvent) else {
 			return Unmanaged.passUnretained(cgEvent)
 		}
+		if nsEvent.type == .endGesture {
+			releaseGesture()
+			return Unmanaged.passUnretained(cgEvent)
+		}
 
 		let touches = nsEvent.allTouches()
 		let touchCount = touches.count
@@ -104,23 +110,14 @@ import ScrolodexCore
 			return Unmanaged.passUnretained(cgEvent)
 		}
 
-		let activeTouches = touches.filter { touch in
-			!touch.isResting && (touch.phase == .began || touch.phase == .moved)
-		}
+		let gestureTouches = touches.map(GestureTouch.init)
+		let activeTouches = gestureTouches.filter(\.isDown)
 		let fingersDown = touches.filter { touch in
 			touch.phase == .began || touch.phase == .moved || touch.phase == .stationary
 		}.count
 
 		if fingersDown == 0 {
-			if triggerActive {
-				triggerActive = false
-				Task { @MainActor [coordinator] in
-					coordinator.handleTriggerRelease()
-				}
-			}
-			gestureTracker.reset()
-			activeTriggerConfig = nil
-			nonGestureDetected = false
+			releaseGesture()
 			return Unmanaged.passUnretained(cgEvent)
 		}
 
@@ -151,13 +148,15 @@ import ScrolodexCore
 						triggerActive = true
 						let captured = config
 						let threshold = scrollThreshold
-						let cursor = cursorLocation()
+						let cursor = cgCursorLocation()
 						let resolvedDockAction = resolveDockAction(cursor: cursor)
 						Task { @MainActor [coordinator, dockHandler] in
 							if let resolvedDockAction {
 								dockHandler.handle(dockAction: resolvedDockAction)
 							} else {
-								let context = TriggerContext.from(gestureConfig: captured, scrollThreshold: threshold)
+								let context = TriggerContext.from(
+									gestureConfig: captured,
+									scrollThreshold: threshold)
 								coordinator.activate(context)
 							}
 						}
@@ -171,18 +170,19 @@ import ScrolodexCore
 			let delta = gestureTracker.swipeDelta(activeTouches)
 			let horizontal = abs(delta.dx) >= abs(delta.dy)
 			let threshold: CGFloat = 0.03
+			let invert = activeTriggerConfig?.invertDirection == true ? -1 : 1
 
 			if horizontal && abs(delta.dx) > threshold {
-				let direction: Int = delta.dx > 0 ? 1 : -1
+				let direction: Int = (delta.dx > 0 ? -1 : 1) * invert
 				gestureTracker.resetAxis(activeTouches, horizontal: true)
-				let cursor = cursorLocation()
+				let cursor = cgCursorLocation()
 				Task { @MainActor [coordinator] in
 					coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
 				}
 			} else if !horizontal && abs(delta.dy) > threshold {
-				let direction: Int = delta.dy < 0 ? 1 : -1
+				let direction: Int = (delta.dy < 0 ? -1 : 1) * invert
 				gestureTracker.resetAxis(activeTouches, horizontal: false)
-				let cursor = cursorLocation()
+				let cursor = cgCursorLocation()
 				Task { @MainActor [coordinator] in
 					coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
 				}
@@ -195,73 +195,62 @@ import ScrolodexCore
 
 	private func resolveDockAction(cursor: CGPoint) -> DockAction? {
 		guard let dockObserver,
-		      let hovered = dockObserver.currentHovered,
-		      hovered.bundleIdentifier != (Bundle.main.bundleIdentifier ?? ""),
-		      hovered.itemFrame.contains(cursor),
-		      let dockConfig = dockHoverConfigs.first(where: { $0.enabled })
+			let hovered = dockObserver.currentHovered,
+			hovered.bundleIdentifier != (Bundle.main.bundleIdentifier ?? ""),
+			hovered.itemFrame.contains(cursor),
+			let dockConfig = dockHoverConfigs.first(where: { $0.enabled })
 		else { return nil }
 
 		return .activate(config: dockConfig, bundleID: hovered.bundleIdentifier)
 	}
-}
 
-private func cursorLocation() -> CGPoint {
-	let mainScreenHeight = NSScreen.screens[0].frame.height
-	let appKitLocation = NSEvent.mouseLocation
-	return CGPoint(x: appKitLocation.x, y: mainScreenHeight - appKitLocation.y)
-}
-
-private struct TouchDelta {
-	var dx: CGFloat
-	var dy: CGFloat
-}
-
-private final class GestureTouchTracker {
-	private var startPositions: [String: NSPoint] = [:]
-
-	func hasRecordedStart() -> Bool { !startPositions.isEmpty }
-
-	func recordStart(_ touches: Set<NSTouch>) -> Bool {
-		let hasNew = touches.contains { startPositions["\($0.identity)"] == nil }
-		if hasNew {
-			for touch in touches {
-				startPositions["\(touch.identity)"] = touch.normalizedPosition
+	private func releaseGesture() {
+		if triggerActive {
+			triggerActive = false
+			Task { @MainActor [coordinator] in
+				coordinator.handleTriggerRelease()
 			}
 		}
-		return hasNew
+		gestureTracker.reset()
+		activeTriggerConfig = nil
+		nonGestureDetected = false
 	}
 
-	func swipeDelta(_ touches: Set<NSTouch>) -> TouchDelta {
-		var totalX: CGFloat = 0
-		var totalY: CGFloat = 0
-		var count: CGFloat = 0
-		for touch in touches {
-			let key = "\(touch.identity)"
-			if let start = startPositions[key] {
-				let current = touch.normalizedPosition
-				totalX += current.x - start.x
-				totalY += current.y - start.y
-				count += 1
-			}
+	private static let observedEventTypes: [NSEvent.EventType] = [
+		.beginGesture,
+		.gesture,
+		.swipe,
+		.endGesture,
+	]
+}
+
+
+
+private extension GestureTouch {
+	init(_ touch: NSTouch) {
+		self.init(
+			identity: "\(touch.identity)",
+			phase: GestureTouchPhase(touch.phase),
+			normalizedPosition: touch.normalizedPosition,
+			isResting: touch.isResting)
+	}
+}
+
+private extension GestureTouchPhase {
+	init(_ phase: NSTouch.Phase) {
+		switch phase {
+		case .began:
+			self = .began
+		case .moved:
+			self = .moved
+		case .stationary:
+			self = .stationary
+		case .ended:
+			self = .ended
+		case .cancelled:
+			self = .cancelled
+		default:
+			self = .cancelled
 		}
-		guard count > 0 else { return TouchDelta(dx: 0, dy: 0) }
-		return TouchDelta(dx: totalX / count, dy: totalY / count)
-	}
-
-	func resetAxis(_ touches: Set<NSTouch>, horizontal: Bool) {
-		for touch in touches {
-			let key = "\(touch.identity)"
-			guard var pos = startPositions[key] else { continue }
-			if horizontal {
-				pos.x = touch.normalizedPosition.x
-			} else {
-				pos.y = touch.normalizedPosition.y
-			}
-			startPositions[key] = pos
-		}
-	}
-
-	func reset() {
-		startPositions.removeAll(keepingCapacity: true)
 	}
 }

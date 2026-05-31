@@ -88,7 +88,7 @@ final class EventTapController: @unchecked Sendable {
 	fileprivate func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
 		let cursorLocation: CGPoint
 		if type == .keyDown {
-			cursorLocation = currentCursorLocation()
+			cursorLocation = cgCursorLocation()
 		} else {
 			cursorLocation = event.location
 		}
@@ -239,11 +239,7 @@ final class EventTapController: @unchecked Sendable {
 	}
 }
 
-private func currentCursorLocation() -> CGPoint {
-	let mainScreenHeight = NSScreen.screens[0].frame.height
-	let appKitLocation = NSEvent.mouseLocation
-	return CGPoint(x: appKitLocation.x, y: mainScreenHeight - appKitLocation.y)
-}
+
 
 private let eventTapCallback: CGEventTapCallBack = { _, type, event, userInfo in
 	guard let userInfo else { return Unmanaged.passUnretained(event) }
