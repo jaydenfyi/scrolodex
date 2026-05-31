@@ -73,7 +73,7 @@ public final class SpaceSwitcher: @unchecked Sendable {
 				instantVelocity: instantVelocity
 			)
 		}
-		let duration = max(0.18, sequences.flatMap { $0 }.map(\.delay).max() ?? 0)
+		let duration = max(animateScroll ? 0.18 : 0.08, sequences.flatMap { $0 }.map(\.delay).max() ?? 0)
 		guard switchGate.begin(now: CFAbsoluteTimeGetCurrent(), duration: duration) else {
 			Log.debug("desktop switch ignored while previous swipe is in flight")
 			return nil
