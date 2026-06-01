@@ -1,4 +1,5 @@
 import ScrolodexCore
+import ScrolodexSettings
 import SwiftUI
 
 struct TriggerRowView: View {
@@ -200,18 +201,33 @@ struct TriggerRowView: View {
 						.font(.caption)
 						.foregroundStyle(.secondary)
 					Spacer()
-					Picker("", selection: $store.gesture) {
-						Text("None").tag(0)
-						ForEach(TrackpadFingerCount.allCases, id: \.rawValue) { count in
-							Text(count.displayName).tag(count.rawValue)
+					Picker("", selection: gestureSelection) {
+						ForEach(GestureInputOption.allCases, id: \.rawValue) { option in
+							Text(option.displayName).tag(option)
 						}
 					}
-					.frame(width: 180)
+					.frame(width: 280)
 					.labelsHidden()
 				}
 				.padding(.vertical, 4)
 			}
 		}
+	}
+
+	private var gestureSelection: Binding<GestureInputOption> {
+		Binding(
+			get: {
+				GestureInputOption(
+					fingerCountRawValue: store.gesture,
+					swipeDirectionRawValue: store.gestureDirection)
+			},
+			set: { option in
+				store.gesture = option.fingerCount?.rawValue ?? 0
+				if option != .none {
+					store.gestureDirection = option.swipeDirection.rawValue
+				}
+			}
+		)
 	}
 
 	private func keyBindingRow(

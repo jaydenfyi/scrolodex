@@ -59,6 +59,8 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 			let rawFingerCount = defaults.integer(forKey: "\(entry.prefix).gesture")
 			guard let fingerCount = TrackpadFingerCount(rawValue: rawFingerCount) else { return nil }
 			let settings = PerTriggerSettings.read(prefix: entry.prefix, defaults: defaults)
+			let swipeDirection = GestureSwipeDirection(
+				rawValue: defaults.string(forKey: "\(entry.prefix).gestureDirection") ?? "") ?? .vertical
 
 			return GestureTriggerConfig(
 				fingerCount: fingerCount,
@@ -70,7 +72,7 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 				theme: appearance.theme,
 				monitorScope: settings.monitorScope,
 				invertDirection: settings.invertDirection,
-				swipeDirection: .vertical,
+				swipeDirection: swipeDirection,
 				animate: appearance.animate,
 				wrapAround: appearance.wrapAround
 			)

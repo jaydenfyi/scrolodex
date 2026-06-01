@@ -44,19 +44,6 @@ struct GestureSwipeDirectionTests {
 		#expect(result.navigation == nil)
 	}
 
-	@Test("both directions preserve dominant axis behavior")
-	func bothDirectionsPreserveDominantAxisBehavior() {
-		let result = GestureSwipeDirection.both.navigationDelta(
-			dx: 0.08,
-			dy: 0.04,
-			threshold: 0.03,
-			dominanceRatio: 1.5,
-			currentIntent: .undecided)
-
-		#expect(result.intent == .horizontal)
-		#expect(result.navigation == GestureSwipeNavigationDelta(axis: .horizontal, direction: -1))
-	}
-
 	@Test("vertical direction locks horizontal intent when horizontal motion dominates")
 	func verticalDirectionLocksHorizontalIntentWhenHorizontalMotionDominates() {
 		let result = GestureSwipeDirection.vertical.navigationDelta(

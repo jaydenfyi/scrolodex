@@ -114,10 +114,9 @@ public struct GestureSwipeNavigationResult: Equatable, Sendable {
 	}
 }
 
-public enum GestureSwipeDirection: Equatable, Sendable {
+public enum GestureSwipeDirection: String, Equatable, Sendable {
 	case vertical
 	case horizontal
-	case both
 
 	public func navigationDelta(
 		dx: CGFloat,
@@ -126,35 +125,14 @@ public enum GestureSwipeDirection: Equatable, Sendable {
 		dominanceRatio: CGFloat,
 		currentIntent: GestureSwipeIntent
 	) -> GestureSwipeNavigationResult {
-		switch self {
-		case .vertical:
-			return Self.restrictedDelta(
-				allowedAxis: .vertical,
-				dx: dx,
-				dy: dy,
-				threshold: threshold,
-				dominanceRatio: dominanceRatio,
-				currentIntent: currentIntent)
-		case .horizontal:
-			return Self.restrictedDelta(
-				allowedAxis: .horizontal,
-				dx: dx,
-				dy: dy,
-				threshold: threshold,
-				dominanceRatio: dominanceRatio,
-				currentIntent: currentIntent)
-		case .both:
-			if abs(dx) >= abs(dy) {
-				let navigation = Self.horizontalDelta(dx: dx, threshold: threshold)
-				return GestureSwipeNavigationResult(
-					intent: navigation == nil ? .undecided : .horizontal,
-					navigation: navigation)
-			}
-			let navigation = Self.verticalDelta(dy: dy, threshold: threshold)
-			return GestureSwipeNavigationResult(
-				intent: navigation == nil ? .undecided : .vertical,
-				navigation: navigation)
-		}
+		let allowedAxis: GestureSwipeAxis = self == .horizontal ? .horizontal : .vertical
+		return Self.restrictedDelta(
+			allowedAxis: allowedAxis,
+			dx: dx,
+			dy: dy,
+			threshold: threshold,
+			dominanceRatio: dominanceRatio,
+			currentIntent: currentIntent)
 	}
 
 	private static func restrictedDelta(

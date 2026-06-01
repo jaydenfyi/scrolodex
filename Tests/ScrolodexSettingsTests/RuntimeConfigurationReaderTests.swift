@@ -54,6 +54,32 @@ struct RuntimeConfigurationReaderTests {
 		#expect(configNoGesture.gestureConfigs.isEmpty)
 	}
 
+	@Test("gesture config reads horizontal swipe direction")
+	func gestureConfigReadsHorizontalSwipeDirection() {
+		let defaults = makeDefaults(overrides: [
+			"trigger.underCursor.allApps.gesture": 3,
+			"trigger.underCursor.allApps.gestureDirection": "horizontal",
+		])
+
+		let config = UserDefaultsRuntimeConfigurationReader.read(from: defaults)
+
+		#expect(config.gestureConfigs.first?.fingerCount == .three)
+		#expect(config.gestureConfigs.first?.swipeDirection == .horizontal)
+	}
+
+	@Test("gesture config defaults invalid swipe direction to vertical")
+	func gestureConfigDefaultsInvalidSwipeDirectionToVertical() {
+		let defaults = makeDefaults(overrides: [
+			"trigger.underCursor.allApps.gesture": 4,
+			"trigger.underCursor.allApps.gestureDirection": "diagonal",
+		])
+
+		let config = UserDefaultsRuntimeConfigurationReader.read(from: defaults)
+
+		#expect(config.gestureConfigs.first?.fingerCount == .four)
+		#expect(config.gestureConfigs.first?.swipeDirection == .vertical)
+	}
+
 	@Test("dock hover migration from old prefix")
 	func dockHoverMigration() {
 		let defaults = makeDefaults()

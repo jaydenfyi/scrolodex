@@ -26,6 +26,10 @@ public enum SettingKey {
 			}
 		}
 
+		for entry in TriggerSettingCatalog.windowEntries {
+			registrations["\(entry.prefix).gestureDirection"] = GestureSwipeDirection.vertical.rawValue
+		}
+
 		registrations["desktopSwitch.animate"] = SettingDefaults.desktopSwitchAnimate
 		registrations["desktopSwitch.wrapAround"] = SettingDefaults.desktopSwitchWrapAround
 

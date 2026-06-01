@@ -60,6 +60,10 @@ final class TriggerSettingsStore {
 		didSet { writeIfNotApplyingExternalSnapshot("gesture", gesture) }
 	}
 
+	var gestureDirection: String {
+		didSet { writeIfNotApplyingExternalSnapshot("gestureDirection", gestureDirection) }
+	}
+
 	init(prefix: String, defaultFlags: Double = 0, migrationPrefix: String? = nil) {
 		self.prefix = prefix
 		self.defaultFlags = defaultFlags
@@ -82,6 +86,7 @@ final class TriggerSettingsStore {
 		self.kbNavBackwardFlags = snapshot.kbNavBackwardFlags
 		self.kbNavBackwardKeyCode = snapshot.kbNavBackwardKeyCode
 		self.gesture = snapshot.gesture
+		self.gestureDirection = snapshot.gestureDirection
 
 		self.observer = NotificationCenter.default.addObserver(
 			forName: UserDefaults.didChangeNotification,
@@ -136,6 +141,7 @@ final class TriggerSettingsStore {
 		kbNavBackwardFlags = snapshot.kbNavBackwardFlags
 		kbNavBackwardKeyCode = snapshot.kbNavBackwardKeyCode
 		gesture = snapshot.gesture
+		gestureDirection = snapshot.gestureDirection
 	}
 
 	private var currentSnapshot: TriggerSettingsSnapshot {
@@ -151,7 +157,8 @@ final class TriggerSettingsStore {
 			kbNavForwardKeyCode: kbNavForwardKeyCode,
 			kbNavBackwardFlags: kbNavBackwardFlags,
 			kbNavBackwardKeyCode: kbNavBackwardKeyCode,
-			gesture: gesture
+			gesture: gesture,
+			gestureDirection: gestureDirection
 		)
 	}
 
@@ -177,7 +184,9 @@ final class TriggerSettingsStore {
 			kbNavForwardKeyCode: defaults.double(forKey: "\(prefix).keyboardNav.forwardKeyCode"),
 			kbNavBackwardFlags: defaults.double(forKey: "\(prefix).keyboardNav.backwardFlags"),
 			kbNavBackwardKeyCode: defaults.double(forKey: "\(prefix).keyboardNav.backwardKeyCode"),
-			gesture: defaults.integer(forKey: "\(prefix).gesture")
+			gesture: defaults.integer(forKey: "\(prefix).gesture"),
+			gestureDirection: defaults.string(forKey: "\(prefix).gestureDirection")
+				?? GestureSwipeDirection.vertical.rawValue
 		)
 	}
 
@@ -214,4 +223,5 @@ private struct TriggerSettingsSnapshot: Equatable {
 	let kbNavBackwardFlags: Double
 	let kbNavBackwardKeyCode: Double
 	let gesture: Int
+	let gestureDirection: String
 }

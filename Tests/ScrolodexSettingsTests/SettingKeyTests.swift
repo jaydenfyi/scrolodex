@@ -16,6 +16,9 @@ struct SettingKeyTests {
 		#expect(defaults.bool(forKey: "trigger.underCursor.allApps.enabled"))
 		#expect(defaults.bool(forKey: "trigger.currentScreen.allApps.enabled"))
 		#expect(defaults.bool(forKey: "dockHover.allMonitors.enabled"))
+		#expect(
+			defaults.string(forKey: "trigger.underCursor.allApps.gestureDirection")
+				== GestureSwipeDirection.vertical.rawValue)
 		#expect(defaults.string(forKey: SettingKey.theme) == SettingDefaults.theme.rawValue)
 	}
 }
