@@ -1,4 +1,11 @@
 # Changelog
+## 0.0.9 (2026-06-01)
+
+### Fixes
+
+- Collapse duplicate `releaseGesture`/`cancelGesture` cleanup paths into a single `endGesture` method so gesture session state stays in sync.
+- Reset stale Gesture Trigger tracking when inactive touch snapshots fall below the configured finger count so later trackpad swipes can activate reliably.
+
 ## 0.0.8 (2026-06-01)
 
 ### Fixes
