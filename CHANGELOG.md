@@ -1,4 +1,11 @@
 # Changelog
+## 0.0.10 (2026-06-01)
+
+### Fixes
+
+- Add Gesture Trigger settings for choosing vertical or horizontal three- and four-finger swipes.
+- Restrict Gesture Trigger navigation to vertical swipes by locking gesture intent before starting navigation.
+
 ## 0.0.9 (2026-06-01)
 
 ### Fixes
