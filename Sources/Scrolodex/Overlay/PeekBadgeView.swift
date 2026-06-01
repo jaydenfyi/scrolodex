@@ -46,12 +46,12 @@ final class PeekBadgeView: NSView {
 	@MainActor private enum Layout {
 		static let titleFont = NSFont.systemFont(ofSize: 14, weight: .semibold)
 		static let counterFont = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
-		static let cornerRadius: CGFloat = 12
-		static let horizontalPadding: CGFloat = 16
+		static let cornerRadius: CGFloat = 10
+		static let horizontalPadding: CGFloat = 10
 		static let verticalPadding: CGFloat = 10
-		static let iconSize: CGFloat = 20
-		static let iconCornerRadius: CGFloat = 5
-		static let iconTextGap: CGFloat = 8
+		static let iconSize: CGFloat = 36
+		static let iconCornerRadius: CGFloat = 9
+		static let iconTextGap: CGFloat = 10
 		static let rowGap: CGFloat = 6
 		static let dotGap: CGFloat = 4
 		static let dotSize: CGFloat = 6
@@ -130,7 +130,7 @@ final class PeekBadgeView: NSView {
 		if let icon = appIcon {
 			let iconRect = CGRect(
 				x: contentX,
-				y: titleRowY + (Layout.titleLineHeight - Layout.iconSize) / 2,
+				y: badgeRect.midY - Layout.iconSize / 2,
 				width: Layout.iconSize,
 				height: Layout.iconSize
 			)
