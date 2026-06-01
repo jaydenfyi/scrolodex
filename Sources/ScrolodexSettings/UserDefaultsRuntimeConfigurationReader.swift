@@ -70,6 +70,7 @@ public struct UserDefaultsRuntimeConfigurationReader: Sendable {
 				theme: appearance.theme,
 				monitorScope: settings.monitorScope,
 				invertDirection: settings.invertDirection,
+				swipeDirection: .vertical,
 				animate: appearance.animate,
 				wrapAround: appearance.wrapAround
 			)

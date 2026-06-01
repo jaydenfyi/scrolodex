@@ -123,7 +123,7 @@ struct TriggerContextTests {
             overlayMode: overlayMode,
             peekEnabled: peekEnabled, peekOpacity: peekOpacity,
             theme: theme, monitorScope: monitorScope,
-            invertDirection: invertDirection,
+            invertDirection: invertDirection, swipeDirection: .vertical,
             animate: animate, wrapAround: wrapAround
         )
     }

@@ -16,6 +16,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private var activeTriggerConfig: GestureTriggerConfig?
 	private var triggerActive = false
 	private var nonGestureDetected = false
+	private var swipeIntent: GestureSwipeIntent = .undecided
 	private var pendingEmptySnapshotRelease: Task<Void, Never>?
 	private let scrollThreshold: Double
 	private let dockObserver: DockObserver?
@@ -101,6 +102,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		activeTriggerConfig = nil
 		triggerActive = false
 		nonGestureDetected = false
+		swipeIntent = .undecided
 	}
 
 	fileprivate func handle(cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
@@ -137,6 +139,8 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 					"gesture inactive reset: active=%d down=%d min=%d",
 					activeTouches.count, gestureTracker.downTouchCount, minimumRequired)
 				nonGestureDetected = false
+				swipeIntent = .undecided
+				activeTriggerConfig = nil
 				return Unmanaged.passUnretained(cgEvent)
 			}
 		}
@@ -162,17 +166,33 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		if !triggerActive {
 			for config in configs {
 				if activeTouches.count == config.fingerCount.rawValue {
+					let threshold: CGFloat = 0.03
+					let dominanceRatio: CGFloat = 1.5
 					let isNew = gestureTracker.recordStart(activeTouches)
-					if !isNew {
+					if isNew {
+						activeTriggerConfig = config
+						swipeIntent = .undecided
+					} else if activeTriggerConfig == nil {
 						Log.debug(
 							"gesture activation blocked: stale identities=%@",
 							gestureTracker.trackedIdentities as NSObject)
+						return Unmanaged.passUnretained(cgEvent)
 					}
-					if isNew {
-						activeTriggerConfig = config
+
+					let delta = gestureTracker.swipeDelta(activeTouches)
+					let result = config.swipeDirection.navigationDelta(
+						dx: delta.dx,
+						dy: delta.dy,
+						threshold: threshold,
+						dominanceRatio: dominanceRatio,
+						currentIntent: swipeIntent)
+					swipeIntent = result.intent
+
+					if let navigation = result.navigation {
 						triggerActive = true
 						let captured = config
-						let threshold = scrollThreshold
+						let scrollThreshold = scrollThreshold
+						let direction = navigation.direction * (config.invertDirection ? -1 : 1)
 						let cursor = cgCursorLocation()
 						let resolvedDockAction = resolveDockAction(cursor: cursor)
 						cursorTrackingState.isActive = resolvedDockAction == nil
@@ -182,12 +202,15 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 							} else {
 								let context = TriggerContext.from(
 									gestureConfig: captured,
-									scrollThreshold: threshold)
+									scrollThreshold: scrollThreshold)
 								coordinator.activate(context)
+								coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
 							}
 						}
+						gestureTracker.resetAxis(activeTouches, horizontal: navigation.axis == .horizontal)
+						return nil
 					}
-					return nil
+					return Unmanaged.passUnretained(cgEvent)
 				}
 			}
 		}
@@ -203,20 +226,22 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 			}
 
 			let delta = gestureTracker.swipeDelta(activeTouches)
-			let horizontal = abs(delta.dx) >= abs(delta.dy)
 			let threshold: CGFloat = 0.03
+			let dominanceRatio: CGFloat = 1.5
 			let invert = activeTriggerConfig?.invertDirection == true ? -1 : 1
+			let result = activeTriggerConfig?.swipeDirection.navigationDelta(
+				dx: delta.dx,
+				dy: delta.dy,
+				threshold: threshold,
+				dominanceRatio: dominanceRatio,
+				currentIntent: swipeIntent)
+			if let result {
+				swipeIntent = result.intent
+			}
 
-			if horizontal && abs(delta.dx) > threshold {
-				let direction: Int = (delta.dx > 0 ? -1 : 1) * invert
-				gestureTracker.resetAxis(activeTouches, horizontal: true)
-				let cursor = cgCursorLocation()
-				Task { @MainActor [coordinator] in
-					coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
-				}
-			} else if !horizontal && abs(delta.dy) > threshold {
-				let direction: Int = (delta.dy < 0 ? -1 : 1) * invert
-				gestureTracker.resetAxis(activeTouches, horizontal: false)
+			if let navigation = result?.navigation {
+				let direction = navigation.direction * invert
+				gestureTracker.resetAxis(activeTouches, horizontal: navigation.axis == .horizontal)
 				let cursor = cgCursorLocation()
 				Task { @MainActor [coordinator] in
 					coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
@@ -260,6 +285,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		gestureTracker.reset()
 		activeTriggerConfig = nil
 		nonGestureDetected = false
+		swipeIntent = .undecided
 	}
 
 	private func releaseGesture() { endGesture(.release) }
