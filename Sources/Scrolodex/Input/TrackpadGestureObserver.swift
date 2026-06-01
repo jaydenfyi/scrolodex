@@ -127,6 +127,17 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 			return Unmanaged.passUnretained(cgEvent)
 		}
 
+		if !triggerActive {
+			let minimumRequired = configs.map(\.fingerCount.rawValue).min() ?? 2
+			if gestureTracker.resetInactiveSnapshotIfBelowMinimumFingerCount(
+				gestureTouches,
+				minimumFingerCount: minimumRequired)
+			{
+				nonGestureDetected = false
+				return Unmanaged.passUnretained(cgEvent)
+			}
+		}
+
 		if activeTouches.count < 2 {
 			return Unmanaged.passUnretained(cgEvent)
 		}
@@ -220,14 +231,22 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		return .activate(config: dockConfig, bundleID: hovered.bundleIdentifier)
 	}
 
-	private func releaseGesture() {
+	private enum GestureEndAction {
+		case release
+		case cancel
+	}
+
+	private func endGesture(_ action: GestureEndAction) {
 		pendingEmptySnapshotRelease?.cancel()
 		pendingEmptySnapshotRelease = nil
 		if triggerActive {
 			triggerActive = false
 			cursorTrackingState.isActive = false
 			Task { @MainActor [coordinator] in
-				coordinator.handleTriggerRelease()
+				switch action {
+				case .release: coordinator.handleTriggerRelease()
+				case .cancel: coordinator.cancel()
+				}
 			}
 		}
 		gestureTracker.reset()
@@ -235,20 +254,9 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		nonGestureDetected = false
 	}
 
-	private func cancelGesture() {
-		pendingEmptySnapshotRelease?.cancel()
-		pendingEmptySnapshotRelease = nil
-		if triggerActive {
-			triggerActive = false
-			cursorTrackingState.isActive = false
-			Task { @MainActor [coordinator] in
-				coordinator.cancel()
-			}
-		}
-		gestureTracker.reset()
-		activeTriggerConfig = nil
-		nonGestureDetected = false
-	}
+	private func releaseGesture() { endGesture(.release) }
+
+	private func cancelGesture() { endGesture(.cancel) }
 
 	private func scheduleEmptySnapshotRelease() {
 		guard pendingEmptySnapshotRelease == nil else { return }

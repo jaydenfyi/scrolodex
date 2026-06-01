@@ -85,6 +85,26 @@ struct GestureTouchTrackerTests {
 		#expect(!GestureTouchSnapshot.exceedsFingerCount(touches, configuredFingerCount: 4))
 	}
 
+	@Test("inactive snapshots below configured finger count clear stale tracking")
+	func inactiveSnapshotsBelowConfiguredFingerCountClearStaleTracking() {
+		var tracker = GestureTouchTracker()
+		let start = [
+			makeTouch("a", phase: .began),
+			makeTouch("b", phase: .began),
+			makeTouch("c", phase: .began),
+		]
+		let recorded = tracker.recordStart(start)
+		#expect(recorded)
+		tracker.updateDownTouches(start)
+
+		let lingering = [makeTouch("a", phase: .stationary)]
+		let didReset = tracker.resetInactiveSnapshotIfBelowMinimumFingerCount(lingering, minimumFingerCount: 3)
+
+		#expect(didReset)
+		#expect(!tracker.hasRecordedStart())
+		#expect(!tracker.hasDownTouches)
+	}
+
 	private func makeTouch(
 		_ identity: String,
 		phase: GestureTouchPhase,

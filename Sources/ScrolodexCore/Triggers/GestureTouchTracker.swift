@@ -56,6 +56,15 @@ public struct GestureTouchTracker: Sendable {
 		}
 	}
 
+	public mutating func resetInactiveSnapshotIfBelowMinimumFingerCount(
+		_ touches: [GestureTouch],
+		minimumFingerCount: Int
+	) -> Bool {
+		guard touches.filter(\.isDown).count < minimumFingerCount else { return false }
+		reset()
+		return true
+	}
+
 	public mutating func recordStart(_ touches: [GestureTouch]) -> Bool {
 		let hasNew = touches.contains { startPositions[$0.identity] == nil }
 		if hasNew {
