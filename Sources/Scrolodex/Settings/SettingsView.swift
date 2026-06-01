@@ -14,7 +14,12 @@ struct SettingsView: View {
 	@State private var expandedAdvancedCards: Set<String> = []
 
 	private var appVersion: String {
-		Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+		let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+		#if DEBUG
+		return "\(version) (debug)"
+		#else
+		return version
+		#endif
 	}
 
 	@AppStorage(SettingKey.scrollSensitivity) private var scrollSensitivity: Double = SettingDefaults.scrollSensitivity

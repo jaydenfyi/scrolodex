@@ -84,6 +84,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				self.restartEventTap(with: coordinator)
 			}
 		}
+
+		let workspaceNotifications = NSWorkspace.shared.notificationCenter
+		for (name, reason) in [
+			(NSWorkspace.didWakeNotification, "wake"),
+			(NSWorkspace.sessionDidBecomeActiveNotification, "session active"),
+		] {
+			workspaceNotifications.addObserver(
+				forName: name,
+				object: nil,
+				queue: .main
+			) { [weak self] _ in
+				Task { @MainActor [weak self] in
+					guard let self, let coordinator = self.navigationCoordinator else { return }
+					Log.info("system resume detected reason=%@; restarting event taps", reason as NSString)
+					self.restartEventTap(with: coordinator)
+				}
+			}
+		}
 	}
 
 	private func openSettings() {

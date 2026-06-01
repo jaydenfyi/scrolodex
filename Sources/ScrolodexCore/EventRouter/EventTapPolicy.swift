@@ -18,8 +18,6 @@ public enum EventTapPolicy {
 		.flagsChanged,
 		.keyDown,
 		.mouseMoved,
-		.tapDisabledByTimeout,
-		.tapDisabledByUserInput,
 	]
 
 	public static func action(for type: CGEventType, triggerHeld: Bool, permissionsAvailable: Bool)
@@ -41,7 +39,7 @@ public enum EventTapPolicy {
 		switch type {
 		case _ where !permissionsAvailable:
 			return .passThrough
-		case .tapDisabledByTimeout, .tapDisabledByUserInput:
+		case _ where isDisabledEvent(type):
 			return .reenableTap
 		case .keyDown:
 			for (index, binding) in keyboardBindings.enumerated() {
@@ -64,5 +62,9 @@ public enum EventTapPolicy {
 		default:
 			return .passThrough
 		}
+	}
+
+	public static func isDisabledEvent(_ type: CGEventType) -> Bool {
+		type == .tapDisabledByTimeout || type == .tapDisabledByUserInput
 	}
 }

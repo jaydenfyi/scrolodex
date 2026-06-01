@@ -59,10 +59,18 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 					guard let userInfo else { return Unmanaged.passUnretained(event) }
 					let observer = Unmanaged<TrackpadGestureObserver>.fromOpaque(userInfo)
 						.takeUnretainedValue()
-					if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+					if EventTapPolicy.isDisabledEvent(type) {
 						observer.releaseGesture()
+						let reason = type == .tapDisabledByTimeout ? "timeout" : "userInput"
 						if let tap = observer.eventTap {
 							CGEvent.tapEnable(tap: tap, enable: true)
+							Log.info(
+								"gesture event tap disabled reason=%@; re-enabled",
+								reason as NSString)
+						} else {
+							Log.info(
+								"gesture event tap disabled reason=%@; no tap to re-enable",
+								reason as NSString)
 						}
 						return Unmanaged.passUnretained(event)
 					}
@@ -76,10 +84,14 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		}
 
 		eventTap = tap
-		runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-		if let runLoopSource {
-			CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+		guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
+			Log.info("failed to create gesture event tap run loop source")
+			CFMachPortInvalidate(tap)
+			eventTap = nil
+			return
 		}
+		runLoopSource = source
+		CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
 		CGEvent.tapEnable(tap: tap, enable: true)
 		let configSummary = triggerConfigs.map(\.fingerCount.displayName).joined(separator: ", ")
 		Log.info("gesture observer started configs=%@", configSummary as NSString)
@@ -204,10 +216,12 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 									gestureConfig: captured,
 									scrollThreshold: scrollThreshold)
 								coordinator.activate(context)
-								coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
+								coordinator.handleKeyboardNavigation(
+									direction: direction, cursor: cursor)
 							}
 						}
-						gestureTracker.resetAxis(activeTouches, horizontal: navigation.axis == .horizontal)
+						gestureTracker.resetAxis(
+							activeTouches, horizontal: navigation.axis == .horizontal)
 						return nil
 					}
 					return Unmanaged.passUnretained(cgEvent)

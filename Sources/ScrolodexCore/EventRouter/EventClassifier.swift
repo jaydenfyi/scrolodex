@@ -63,7 +63,7 @@ public struct EventClassifier: Sendable {
 		event: RouterEvent,
 		session: inout RouterSessionState
 	) -> (RouterDirective, RouterAction)? {
-		guard event.type == .tapDisabledByTimeout || event.type == .tapDisabledByUserInput else { return nil }
+		guard EventTapPolicy.isDisabledEvent(event.type) else { return nil }
 
 		if event.hasPermissions {
 			return (.reenableTap, .none)
