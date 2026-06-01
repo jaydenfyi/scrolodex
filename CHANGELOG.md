@@ -1,4 +1,15 @@
 # Changelog
+## 0.0.8 (2026-06-01)
+
+### Fixes
+
+- stateful touch tracking for session lifecycle
+- consume scroll during active session
+- Consume scroll events while an external Window Navigation Session is active so Gesture Trigger navigation does not leak inertial scroll into the active app.
+- Enlarge Tooltip app icons to fill more of the badge height and keep the compact container padding balanced.
+- Fix Trackpad Gesture session lifecycle: stateful touch tracking keeps sessions alive through finger-count transitions (partial lift), extra-finger touch cancels the session immediately, and deferred 80ms release handles ambiguous empty snapshots during transitions.
+- Update GitHub Actions to Node.js 24-compatible versions: actions/checkout v6.0.2, actions/upload-artifact v7.0.1, actions/download-artifact v8.0.1.
+
 ## 0.0.7 (2026-05-31)
 
 ### Fixes
