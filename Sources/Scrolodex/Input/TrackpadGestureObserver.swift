@@ -58,6 +58,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 					let observer = Unmanaged<TrackpadGestureObserver>.fromOpaque(userInfo)
 						.takeUnretainedValue()
 					if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+						observer.releaseGesture()
 						if let tap = observer.eventTap {
 							CGEvent.tapEnable(tap: tap, enable: true)
 						}
@@ -109,12 +110,12 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		}
 
 		let touches = nsEvent.allTouches()
-		let touchCount = touches.count
-		guard touchCount > 0 else {
+		let gestureTouches = touches.map(GestureTouch.init)
+		if GestureTouchSnapshot.isTerminal(gestureTouches) {
+			releaseGesture()
 			return Unmanaged.passUnretained(cgEvent)
 		}
 
-		let gestureTouches = touches.map(GestureTouch.init)
 		let activeTouches = gestureTouches.filter(\.isDown)
 		let fingersDown = touches.filter { touch in
 			touch.phase == .began || touch.phase == .moved || touch.phase == .stationary
@@ -229,8 +230,6 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		.endGesture,
 	]
 }
-
-
 
 private extension GestureTouch {
 	init(_ touch: NSTouch) {

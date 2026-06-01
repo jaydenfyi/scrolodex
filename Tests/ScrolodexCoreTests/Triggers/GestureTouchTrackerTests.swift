@@ -37,6 +37,11 @@ struct GestureTouchTrackerTests {
 		#expect(tracker.swipeDelta(moved).dx > 0.08)
 	}
 
+	@Test("empty touch snapshots are terminal")
+	func emptyTouchSnapshotsAreTerminal() {
+		#expect(GestureTouchSnapshot.isTerminal([]))
+	}
+
 	private func makeTouch(
 		_ identity: String,
 		phase: GestureTouchPhase,

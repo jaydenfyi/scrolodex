@@ -26,6 +26,12 @@ public struct GestureTouch: Equatable, Sendable {
 	}
 }
 
+public enum GestureTouchSnapshot: Sendable {
+	public static func isTerminal(_ touches: [GestureTouch]) -> Bool {
+		touches.isEmpty || !touches.contains(where: \.isDown)
+	}
+}
+
 public struct GestureTouchTracker: Sendable {
 	private var startPositions: [String: CGPoint] = [:]
 
