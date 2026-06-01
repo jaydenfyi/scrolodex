@@ -2,4 +2,4 @@
 default: patch
 ---
 
-Reset Trackpad Gesture state when the HID tap is disabled or a gesture event reports no active touches, preventing gesture swiping from becoming stuck after an incomplete gesture release.
+Fix Trackpad Gesture session lifecycle: stateful touch tracking keeps sessions alive through finger-count transitions (partial lift), extra-finger touch cancels the session immediately, and deferred 80ms release handles ambiguous empty snapshots during transitions.

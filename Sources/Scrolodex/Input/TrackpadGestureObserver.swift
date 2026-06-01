@@ -16,6 +16,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private var activeTriggerConfig: GestureTriggerConfig?
 	private var triggerActive = false
 	private var nonGestureDetected = false
+	private var pendingEmptySnapshotRelease: Task<Void, Never>?
 	private let scrollThreshold: Double
 	private let dockObserver: DockObserver?
 	private let dockHoverConfigs: [DockHoverConfiguration]
@@ -94,6 +95,8 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		eventTap = nil
 		runLoopSource = nil
 		cursorTrackingState.isActive = false
+		pendingEmptySnapshotRelease?.cancel()
+		pendingEmptySnapshotRelease = nil
 		gestureTracker.reset()
 		activeTriggerConfig = nil
 		triggerActive = false
@@ -104,24 +107,22 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		guard let nsEvent = NSEvent(cgEvent: cgEvent) else {
 			return Unmanaged.passUnretained(cgEvent)
 		}
-		if nsEvent.type == .endGesture {
-			releaseGesture()
-			return Unmanaged.passUnretained(cgEvent)
-		}
-
 		let touches = nsEvent.allTouches()
 		let gestureTouches = touches.map(GestureTouch.init)
-		if GestureTouchSnapshot.isTerminal(gestureTouches) {
+		if gestureTouches.isEmpty {
+			if triggerActive, gestureTracker.hasDownTouches {
+				scheduleEmptySnapshotRelease()
+				return Unmanaged.passUnretained(cgEvent)
+			}
 			releaseGesture()
 			return Unmanaged.passUnretained(cgEvent)
 		}
+		pendingEmptySnapshotRelease?.cancel()
+		pendingEmptySnapshotRelease = nil
+		gestureTracker.updateDownTouches(gestureTouches)
 
 		let activeTouches = gestureTouches.filter(\.isDown)
-		let fingersDown = touches.filter { touch in
-			touch.phase == .began || touch.phase == .moved || touch.phase == .stationary
-		}.count
-
-		if fingersDown == 0 {
+		if !gestureTracker.hasDownTouches {
 			releaseGesture()
 			return Unmanaged.passUnretained(cgEvent)
 		}
@@ -173,6 +174,15 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		}
 
 		if triggerActive {
+			if let activeTriggerConfig,
+				GestureTouchSnapshot.exceedsFingerCount(
+					gestureTouches,
+					configuredFingerCount: activeTriggerConfig.fingerCount.rawValue)
+			{
+				cancelGesture()
+				return Unmanaged.passUnretained(cgEvent)
+			}
+
 			let delta = gestureTracker.swipeDelta(activeTouches)
 			let horizontal = abs(delta.dx) >= abs(delta.dy)
 			let threshold: CGFloat = 0.03
@@ -211,6 +221,8 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	}
 
 	private func releaseGesture() {
+		pendingEmptySnapshotRelease?.cancel()
+		pendingEmptySnapshotRelease = nil
 		if triggerActive {
 			triggerActive = false
 			cursorTrackingState.isActive = false
@@ -221,6 +233,30 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		gestureTracker.reset()
 		activeTriggerConfig = nil
 		nonGestureDetected = false
+	}
+
+	private func cancelGesture() {
+		pendingEmptySnapshotRelease?.cancel()
+		pendingEmptySnapshotRelease = nil
+		if triggerActive {
+			triggerActive = false
+			cursorTrackingState.isActive = false
+			Task { @MainActor [coordinator] in
+				coordinator.cancel()
+			}
+		}
+		gestureTracker.reset()
+		activeTriggerConfig = nil
+		nonGestureDetected = false
+	}
+
+	private func scheduleEmptySnapshotRelease() {
+		guard pendingEmptySnapshotRelease == nil else { return }
+		pendingEmptySnapshotRelease = Task { @MainActor [weak self] in
+			try? await Task.sleep(nanoseconds: 80_000_000)
+			guard !Task.isCancelled else { return }
+			self?.releaseGesture()
+		}
 	}
 
 	private static let observedEventTypes: [NSEvent.EventType] = [

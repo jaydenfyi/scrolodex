@@ -42,6 +42,49 @@ struct GestureTouchTrackerTests {
 		#expect(GestureTouchSnapshot.isTerminal([]))
 	}
 
+	@Test("partial lift events keep remaining tracked fingers down")
+	func partialLiftEventsKeepRemainingTrackedFingersDown() {
+		var tracker = GestureTouchTracker()
+		tracker.updateDownTouches([
+			makeTouch("a", phase: .began),
+			makeTouch("b", phase: .began),
+			makeTouch("c", phase: .began),
+		])
+
+		tracker.updateDownTouches([makeTouch("a", phase: .ended)])
+
+		#expect(tracker.hasDownTouches)
+	}
+
+	@Test("all lifted tracked fingers end the session")
+	func allLiftedTrackedFingersEndTheSession() {
+		var tracker = GestureTouchTracker()
+		tracker.updateDownTouches([
+			makeTouch("a", phase: .began),
+			makeTouch("b", phase: .began),
+		])
+
+		tracker.updateDownTouches([
+			makeTouch("a", phase: .ended),
+			makeTouch("b", phase: .ended),
+		])
+
+		#expect(!tracker.hasDownTouches)
+	}
+
+	@Test("extra fingers exceed active gesture finger count")
+	func extraFingersExceedActiveGestureFingerCount() {
+		let touches = [
+			makeTouch("a", phase: .moved),
+			makeTouch("b", phase: .moved),
+			makeTouch("c", phase: .stationary),
+			makeTouch("d", phase: .began),
+		]
+
+		#expect(GestureTouchSnapshot.exceedsFingerCount(touches, configuredFingerCount: 3))
+		#expect(!GestureTouchSnapshot.exceedsFingerCount(touches, configuredFingerCount: 4))
+	}
+
 	private func makeTouch(
 		_ identity: String,
 		phase: GestureTouchPhase,

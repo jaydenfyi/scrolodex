@@ -30,14 +30,31 @@ public enum GestureTouchSnapshot: Sendable {
 	public static func isTerminal(_ touches: [GestureTouch]) -> Bool {
 		touches.isEmpty || !touches.contains(where: \.isDown)
 	}
+
+	public static func exceedsFingerCount(_ touches: [GestureTouch], configuredFingerCount: Int) -> Bool {
+		touches.filter(\.isDown).count > configuredFingerCount
+	}
 }
 
 public struct GestureTouchTracker: Sendable {
 	private var startPositions: [String: CGPoint] = [:]
+	private var downTouchIDs: Set<String> = []
 
 	public init() {}
 
 	public func hasRecordedStart() -> Bool { !startPositions.isEmpty }
+
+	public var hasDownTouches: Bool { !downTouchIDs.isEmpty }
+
+	public mutating func updateDownTouches(_ touches: [GestureTouch]) {
+		for touch in touches {
+			if touch.isDown {
+				downTouchIDs.insert(touch.identity)
+			} else {
+				downTouchIDs.remove(touch.identity)
+			}
+		}
+	}
 
 	public mutating func recordStart(_ touches: [GestureTouch]) -> Bool {
 		let hasNew = touches.contains { startPositions[$0.identity] == nil }
@@ -79,5 +96,6 @@ public struct GestureTouchTracker: Sendable {
 
 	public mutating func reset() {
 		startPositions.removeAll(keepingCapacity: true)
+		downTouchIDs.removeAll(keepingCapacity: true)
 	}
 }
