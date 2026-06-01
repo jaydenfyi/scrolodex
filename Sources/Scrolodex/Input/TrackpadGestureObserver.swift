@@ -133,6 +133,9 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 				gestureTouches,
 				minimumFingerCount: minimumRequired)
 			{
+				Log.debug(
+					"gesture inactive reset: active=%d down=%d min=%d",
+					activeTouches.count, gestureTracker.downTouchCount, minimumRequired)
 				nonGestureDetected = false
 				return Unmanaged.passUnretained(cgEvent)
 			}
@@ -160,6 +163,11 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 			for config in configs {
 				if activeTouches.count == config.fingerCount.rawValue {
 					let isNew = gestureTracker.recordStart(activeTouches)
+					if !isNew {
+						Log.debug(
+							"gesture activation blocked: stale identities=%@",
+							gestureTracker.trackedIdentities as NSObject)
+					}
 					if isNew {
 						activeTriggerConfig = config
 						triggerActive = true

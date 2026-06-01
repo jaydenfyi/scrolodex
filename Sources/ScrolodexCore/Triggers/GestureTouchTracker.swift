@@ -46,6 +46,10 @@ public struct GestureTouchTracker: Sendable {
 
 	public var hasDownTouches: Bool { !downTouchIDs.isEmpty }
 
+	public var downTouchCount: Int { downTouchIDs.count }
+
+	public var trackedIdentities: [String] { Array(startPositions.keys) }
+
 	public mutating func updateDownTouches(_ touches: [GestureTouch]) {
 		for touch in touches {
 			if touch.isDown {
