@@ -39,8 +39,15 @@ public struct EventClassifier: Sendable {
 
 		if let result = handleDockHover(event: event, dockHover: dockHover, session: &session) { return result }
 
-		if externalWindowSessionActive && event.type == .mouseMoved {
-			return (.consumeAndPassthrough, .window(.cursorMove(event.cursorLocation)))
+		if externalWindowSessionActive {
+			switch event.type {
+			case .scrollWheel:
+				return (.consume, .none)
+			case .mouseMoved:
+				return (.consumeAndPassthrough, .window(.cursorMove(event.cursorLocation)))
+			default:
+				break
+			}
 		}
 
 		return handlePolicyAction(

@@ -239,6 +239,22 @@ struct EventClassifierTests {
 		#expect(action == .window(.cursorMove(cursor)))
 	}
 
+	@Test("scroll during external window session is consumed")
+	func scrollDuringExternalWindowSessionIsConsumed() {
+		let classifier = EventClassifier(triggers: [makeTrigger(flags: .maskControl)], desktopTriggers: [])
+		var session = RouterSessionState()
+		let event = RouterEvent(type: .scrollWheel, flags: [], keyCode: 0, scrollDelta: -3.0)
+
+		let (directive, action) = classifier.classify(
+			event: event,
+			dockHover: DockHoverInput(),
+			externalWindowSessionActive: true,
+			session: &session)
+
+		#expect(directive == .consume)
+		#expect(action == .none)
+	}
+
 	@Test("keyboard navigation activates matching trigger")
 	func keyboardNavigationActivatesTrigger() {
 		let forward = KeyboardHotkeyConfiguration(flags: .maskControl, keyCode: 49)
