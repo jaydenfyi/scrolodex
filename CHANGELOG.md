@@ -1,4 +1,13 @@
 # Changelog
+## 0.0.11 (2026-06-02)
+
+### Fixes
+
+- Append "(debug)" to the version string in Settings for debug builds.
+- Recreate Gesture Trigger HID event tap after timeout or user-input disable instead of re-enabling the dead mach port.
+- Log Gesture Trigger event tap disable/re-enable events and fail fast when its run loop source cannot be created.
+- Recreate event taps on wake and session re-activation to recover from silent gesture tap death after sleep.
+
 ## 0.0.10 (2026-06-01)
 
 ### Fixes
