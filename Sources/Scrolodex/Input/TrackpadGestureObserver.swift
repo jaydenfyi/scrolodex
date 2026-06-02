@@ -18,6 +18,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private var nonGestureDetected = false
 	private var swipeIntent: GestureSwipeIntent = .undecided
 	private var pendingEmptySnapshotRelease: Task<Void, Never>?
+	private var restartPending = false
 	private let scrollThreshold: Double
 	private let dockObserver: DockObserver?
 	private let dockHoverConfigs: [DockHoverConfiguration]
@@ -62,16 +63,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 					if EventTapPolicy.isDisabledEvent(type) {
 						observer.releaseGesture()
 						let reason = type == .tapDisabledByTimeout ? "timeout" : "userInput"
-						if let tap = observer.eventTap {
-							CGEvent.tapEnable(tap: tap, enable: true)
-							Log.info(
-								"gesture event tap disabled reason=%@; re-enabled",
-								reason as NSString)
-						} else {
-							Log.info(
-								"gesture event tap disabled reason=%@; no tap to re-enable",
-								reason as NSString)
-						}
+						observer.recreateEventTapAfterDisable(reason: reason)
 						return Unmanaged.passUnretained(event)
 					}
 					return observer.handle(cgEvent: event)
@@ -115,6 +107,19 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		triggerActive = false
 		nonGestureDetected = false
 		swipeIntent = .undecided
+		restartPending = false
+	}
+
+	private func recreateEventTapAfterDisable(reason: String) {
+		guard !restartPending else { return }
+		restartPending = true
+		let triggerConfigs = configs
+		Log.info("gesture event tap disabled reason=%@; recreating", reason as NSString)
+		Task { @MainActor [weak self] in
+			guard let self else { return }
+			self.restartPending = false
+			self.start(triggerConfigs: triggerConfigs)
+		}
 	}
 
 	fileprivate func handle(cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
