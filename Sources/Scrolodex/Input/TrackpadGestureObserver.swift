@@ -101,7 +101,6 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		eventTap = nil
 		runLoopSource = nil
 		cursorTrackingState.isActive = false
-		cursorFrozen = false
 		releaseCursorLock()
 		pendingEmptySnapshotRelease?.cancel()
 		pendingEmptySnapshotRelease = nil
@@ -127,7 +126,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 
 	fileprivate func handle(type: CGEventType, cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
 		if type == .mouseMoved {
-			if cursorFrozen {
+			if cursorLock.isFrozen {
 				restoreLockedCursorPosition()
 				return nil
 			}
@@ -306,22 +305,20 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		case cancel
 	}
 
-	private var cursorFrozen = false
-
 	private func beginCursorLock() {
 		_ = cursorLock.lock(at: cgCursorLocation())
 	}
 
 	private func freezeCursor() {
-		guard !cursorFrozen else { return }
-		cursorFrozen = true
+		guard !cursorLock.isFrozen else { return }
+		cursorLock.freeze()
 		_ = CGAssociateMouseAndMouseCursorPosition(0)
 		restoreLockedCursorPosition()
 	}
 
 	private func unfreezeCursor() {
-		guard cursorFrozen else { return }
-		cursorFrozen = false
+		guard cursorLock.isFrozen else { return }
+		cursorLock.unfreeze()
 		_ = CGAssociateMouseAndMouseCursorPosition(1)
 	}
 
@@ -331,7 +328,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	}
 
 	private func releaseCursorLock() {
-		unfreezeCursor()
+		if cursorLock.isFrozen { _ = CGAssociateMouseAndMouseCursorPosition(1) }
 		restoreLockedCursorPosition()
 		cursorLock.release()
 	}
