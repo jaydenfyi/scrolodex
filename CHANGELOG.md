@@ -1,4 +1,10 @@
 # Changelog
+## 0.0.12 (2026-06-03)
+
+### Fixes
+
+- Freeze cursor during gesture navigation and unfreeze when fingers drop below threshold, allowing the tooltip to follow the cursor during live sessions.
+
 ## 0.0.11 (2026-06-02)
 
 ### Fixes
