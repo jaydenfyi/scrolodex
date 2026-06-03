@@ -19,6 +19,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private var swipeIntent: GestureSwipeIntent = .undecided
 	private var pendingEmptySnapshotRelease: Task<Void, Never>?
 	private var restartPending = false
+	private var cursorLock = GestureCursorLockState()
 	private let scrollThreshold: Double
 	private let dockObserver: DockObserver?
 	private let dockHoverConfigs: [DockHoverConfiguration]
@@ -66,7 +67,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 						observer.recreateEventTapAfterDisable(reason: reason)
 						return Unmanaged.passUnretained(event)
 					}
-					return observer.handle(cgEvent: event)
+					return observer.handle(type: type, cgEvent: event)
 				},
 				userInfo: refcon
 			)
@@ -100,6 +101,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		eventTap = nil
 		runLoopSource = nil
 		cursorTrackingState.isActive = false
+		releaseCursorLock()
 		pendingEmptySnapshotRelease?.cancel()
 		pendingEmptySnapshotRelease = nil
 		gestureTracker.reset()
@@ -122,7 +124,18 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		}
 	}
 
-	fileprivate func handle(cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
+	fileprivate func handle(type: CGEventType, cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
+		if type == .mouseMoved {
+			let gestureSessionActive = triggerActive || activeTriggerConfig != nil
+			if GestureMouseMovePolicy.shouldConsume(type: type, gestureSessionActive: gestureSessionActive) {
+				restoreLockedCursorPosition()
+				return nil
+			}
+			return Unmanaged.passUnretained(cgEvent)
+		}
+
+		defer { restoreLockedCursorPosition() }
+
 		guard let nsEvent = NSEvent(cgEvent: cgEvent) else {
 			return Unmanaged.passUnretained(cgEvent)
 		}
@@ -158,6 +171,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 				nonGestureDetected = false
 				swipeIntent = .undecided
 				activeTriggerConfig = nil
+				releaseCursorLock()
 				return Unmanaged.passUnretained(cgEvent)
 			}
 		}
@@ -172,6 +186,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 				let delta = gestureTracker.swipeDelta(activeTouches)
 				if abs(delta.dx) > 0.015 || abs(delta.dy) > 0.015 {
 					nonGestureDetected = true
+					releaseCursorLock()
 				}
 			}
 		}
@@ -189,6 +204,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 					if isNew {
 						activeTriggerConfig = config
 						swipeIntent = .undecided
+						beginCursorLock()
 					} else if activeTriggerConfig == nil {
 						Log.debug(
 							"gesture activation blocked: stale identities=%@",
@@ -210,7 +226,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 						let captured = config
 						let scrollThreshold = scrollThreshold
 						let direction = navigation.direction * (config.invertDirection ? -1 : 1)
-						let cursor = cgCursorLocation()
+						let cursor = cursorLock.anchor ?? cgCursorLocation()
 						let resolvedDockAction = resolveDockAction(cursor: cursor)
 						cursorTrackingState.isActive = resolvedDockAction == nil
 						Task { @MainActor [coordinator, dockHandler] in
@@ -261,7 +277,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 			if let navigation = result?.navigation {
 				let direction = navigation.direction * invert
 				gestureTracker.resetAxis(activeTouches, horizontal: navigation.axis == .horizontal)
-				let cursor = cgCursorLocation()
+				let cursor = cursorLock.anchor ?? cgCursorLocation()
 				Task { @MainActor [coordinator] in
 					coordinator.handleKeyboardNavigation(direction: direction, cursor: cursor)
 				}
@@ -288,9 +304,28 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		case cancel
 	}
 
+	private func beginCursorLock() {
+		let anchor = cursorLock.lock(at: cgCursorLocation())
+		_ = CGAssociateMouseAndMouseCursorPosition(0)
+		_ = CGWarpMouseCursorPosition(anchor)
+	}
+
+	private func restoreLockedCursorPosition() {
+		guard let anchor = cursorLock.anchor else { return }
+		_ = CGWarpMouseCursorPosition(anchor)
+	}
+
+	private func releaseCursorLock() {
+		guard cursorLock.anchor != nil else { return }
+		restoreLockedCursorPosition()
+		cursorLock.release()
+		_ = CGAssociateMouseAndMouseCursorPosition(1)
+	}
+
 	private func endGesture(_ action: GestureEndAction) {
 		pendingEmptySnapshotRelease?.cancel()
 		pendingEmptySnapshotRelease = nil
+		releaseCursorLock()
 		if triggerActive {
 			triggerActive = false
 			cursorTrackingState.isActive = false
@@ -321,6 +356,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	}
 
 	private static let observedEventTypes: [NSEvent.EventType] = [
+		.mouseMoved,
 		.beginGesture,
 		.gesture,
 		.swipe,
