@@ -18,4 +18,14 @@ struct GestureCursorLockStateTests {
 
 		#expect(state.anchor == nil)
 	}
+
+	@Test("refresh updates an existing anchor")
+	func refreshUpdatesExistingAnchor() {
+		var state = GestureCursorLockState(anchor: CGPoint(x: 100, y: 200))
+		let current = CGPoint(x: 160, y: 260)
+
+		state.refresh(to: current)
+
+		#expect(state.anchor == current)
+	}
 }

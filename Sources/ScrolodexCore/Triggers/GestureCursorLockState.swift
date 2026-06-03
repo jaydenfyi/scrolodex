@@ -17,4 +17,9 @@ public struct GestureCursorLockState: Sendable {
 	public mutating func release() {
 		anchor = nil
 	}
+
+	public mutating func refresh(to point: CGPoint) {
+		guard anchor != nil else { return }
+		anchor = point
+	}
 }
