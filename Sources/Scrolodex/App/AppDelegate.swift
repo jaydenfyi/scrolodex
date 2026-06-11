@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		) { [weak self] _ in
 			Task { @MainActor [weak self] in
 				self?.eventTapController?.stop()
+				self?.gestureObserver?.stop()
 			}
 		}
 
@@ -97,7 +98,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			) { [weak self] _ in
 				Task { @MainActor [weak self] in
 					guard let self, let coordinator = self.navigationCoordinator else { return }
-					Log.info("system resume detected reason=%@; restarting event taps", reason as NSString)
+					Log.info(
+						"system resume detected reason=%@; restarting event taps",
+						reason as NSString)
 					self.restartEventTap(with: coordinator)
 				}
 			}
@@ -139,7 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 
 	private func startEventTap(with coordinator: NavigationCoordinator) {
-		guard eventTapController == nil else { return }
+		guard eventTapController == nil, gestureObserver == nil else { return }
 		guard permissionController.allPermissionsGranted else {
 			Log.info("permissions missing; not starting event tap")
 			startPermissionPolling(with: coordinator)
@@ -162,7 +165,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			dockObserver = observer
 		}
 
-		guard !runtime.triggers.isEmpty || !runtime.desktopTriggers.isEmpty || !enabledDockConfigs.isEmpty else {
+		let hasSessionTapInputs =
+			!runtime.triggers.isEmpty || !runtime.desktopTriggers.isEmpty || !enabledDockConfigs.isEmpty
+		let hasGestureInputs = !runtime.gestureConfigs.isEmpty
+		guard hasSessionTapInputs || hasGestureInputs else {
 			Log.info("no triggers enabled; skipping event tap")
 			return
 		}
@@ -173,23 +179,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		)
 		let cursorTrackingState = WindowCursorTrackingState()
 
-		let eventTapController = EventTapController(
-			coordinator: coordinator,
-			triggers: runtime.triggers,
-			desktopTriggers: runtime.desktopTriggers,
-			desktopScrollThreshold: runtime.scrollThreshold,
-			dockObserver: dockObserver,
-			dockHoverConfigs: enabledDockConfigs,
-			dockHandler: dockHandler,
-			cursorTrackingState: cursorTrackingState,
-			permissionCheck: { [weak self] in
-				self?.permissionController.allPermissionsGranted ?? false
-			}
-		)
-		eventTapController.start()
-		self.eventTapController = eventTapController
+		if hasSessionTapInputs {
+			let eventTapController = EventTapController(
+				coordinator: coordinator,
+				triggers: runtime.triggers,
+				desktopTriggers: runtime.desktopTriggers,
+				desktopScrollThreshold: runtime.scrollThreshold,
+				dockObserver: dockObserver,
+				dockHoverConfigs: enabledDockConfigs,
+				dockHandler: dockHandler,
+				cursorTrackingState: cursorTrackingState,
+				permissionCheck: { [weak self] in
+					self?.permissionController.allPermissionsGranted ?? false
+				}
+			)
+			eventTapController.start()
+			self.eventTapController = eventTapController
+		}
 
-		if !runtime.gestureConfigs.isEmpty {
+		if hasGestureInputs {
 			let observer = TrackpadGestureObserver(
 				coordinator: coordinator,
 				scrollThreshold: runtime.scrollThreshold,
@@ -229,6 +237,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 					Log.info("permissions revoked; stopping event tap")
 					self.eventTapController?.stop()
 					self.eventTapController = nil
+					self.gestureObserver?.stop()
+					self.gestureObserver = nil
 					self.revocationMonitorTimer?.invalidate()
 					self.revocationMonitorTimer = nil
 					self.startPermissionPolling(with: coordinator)

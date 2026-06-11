@@ -18,7 +18,8 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 	private var nonGestureDetected = false
 	private var swipeIntent: GestureSwipeIntent = .undecided
 	private var pendingEmptySnapshotRelease: Task<Void, Never>?
-	private var restartPending = false
+	private var pendingEventTapRestart: Task<Void, Never>?
+	private var pendingEventTapHealthCheck: Task<Void, Never>?
 	private var cursorLock = GestureCursorLockState()
 	private let scrollThreshold: Double
 	private let dockObserver: DockObserver?
@@ -42,11 +43,18 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		self.cursorTrackingState = cursorTrackingState
 	}
 
+	deinit {
+		stop()
+	}
+
 	func start(triggerConfigs: [GestureTriggerConfig]) {
 		stop()
 		guard !triggerConfigs.isEmpty else { return }
 		configs = triggerConfigs
+		createEventTap(triggerConfigs: triggerConfigs)
+	}
 
+	private func createEventTap(triggerConfigs: [GestureTriggerConfig]) {
 		let mask = Self.observedEventTypes.reduce(CGEventMask(0)) { mask, eventType in
 			mask | CGEventMask(1 << UInt64(eventType.rawValue))
 		}
@@ -64,7 +72,7 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 					if EventTapPolicy.isDisabledEvent(type) {
 						observer.releaseGesture()
 						let reason = type == .tapDisabledByTimeout ? "timeout" : "userInput"
-						observer.recreateEventTapAfterDisable(reason: reason)
+						observer.recoverEventTapAfterDisable(reason: reason)
 						return Unmanaged.passUnretained(event)
 					}
 					return observer.handle(type: type, cgEvent: event)
@@ -72,15 +80,17 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 				userInfo: refcon
 			)
 		else {
-			Log.info("failed to create gesture event tap")
+			Log.info("failed to create gesture event tap; scheduling retry")
+			scheduleEventTapRestart(reason: "createFailed")
 			return
 		}
 
 		eventTap = tap
 		guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
-			Log.info("failed to create gesture event tap run loop source")
+			Log.info("failed to create gesture event tap run loop source; scheduling retry")
 			CFMachPortInvalidate(tap)
 			eventTap = nil
+			scheduleEventTapRestart(reason: "runLoopSourceFailed")
 			return
 		}
 		runLoopSource = source
@@ -98,6 +108,10 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		if let runLoopSource {
 			CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
 		}
+		pendingEventTapRestart?.cancel()
+		pendingEventTapRestart = nil
+		pendingEventTapHealthCheck?.cancel()
+		pendingEventTapHealthCheck = nil
 		eventTap = nil
 		runLoopSource = nil
 		cursorTrackingState.isActive = false
@@ -109,18 +123,50 @@ final class TrackpadGestureObserver: @unchecked Sendable {
 		triggerActive = false
 		nonGestureDetected = false
 		swipeIntent = .undecided
-		restartPending = false
 	}
 
-	private func recreateEventTapAfterDisable(reason: String) {
-		guard !restartPending else { return }
-		restartPending = true
+	private func recoverEventTapAfterDisable(reason: String) {
+		guard let eventTap else {
+			Log.info(
+				"gesture event tap disabled reason=%@ without active tap; scheduling retry",
+				reason as NSString)
+			scheduleEventTapRestart(reason: reason)
+			return
+		}
+
+		Log.info("gesture event tap disabled reason=%@; re-enabling", reason as NSString)
+		CGEvent.tapEnable(tap: eventTap, enable: true)
+		scheduleEventTapHealthCheck(reason: reason)
+	}
+
+	private func scheduleEventTapRestart(reason: String) {
+		guard pendingEventTapRestart == nil, !configs.isEmpty else { return }
 		let triggerConfigs = configs
-		Log.info("gesture event tap disabled reason=%@; recreating", reason as NSString)
-		Task { @MainActor [weak self] in
+		pendingEventTapRestart = Task { @MainActor [weak self] in
+			try? await Task.sleep(nanoseconds: 1_000_000_000)
+			guard !Task.isCancelled else { return }
 			guard let self else { return }
-			self.restartPending = false
+			self.pendingEventTapRestart = nil
+			if let eventTap = self.eventTap, CGEvent.tapIsEnabled(tap: eventTap) { return }
+			Log.info("retrying gesture event tap start reason=%@", reason as NSString)
 			self.start(triggerConfigs: triggerConfigs)
+		}
+	}
+
+	private func scheduleEventTapHealthCheck(reason: String) {
+		guard pendingEventTapHealthCheck == nil else { return }
+		pendingEventTapHealthCheck = Task { @MainActor [weak self] in
+			try? await Task.sleep(nanoseconds: 500_000_000)
+			guard !Task.isCancelled else { return }
+			guard let self else { return }
+			self.pendingEventTapHealthCheck = nil
+			guard let eventTap = self.eventTap else {
+				self.scheduleEventTapRestart(reason: reason)
+				return
+			}
+			guard !CGEvent.tapIsEnabled(tap: eventTap) else { return }
+			Log.info("gesture event tap still disabled reason=%@; re-enabling", reason as NSString)
+			CGEvent.tapEnable(tap: eventTap, enable: true)
 		}
 	}
 
